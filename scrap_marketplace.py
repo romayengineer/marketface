@@ -10,14 +10,6 @@ from playwright.sync_api import sync_playwright
 
 timeout = 3000
 
-shortcuts = {
-    # shortcut for search
-    "s": "play_dynamic.search(page)",
-    # shortcut for quick testing a new function
-    "t": "play_dynamic.test(page)",
-    "exit": "sys.exit(0)",
-}
-
 def get_browser_context(p):
     browser = p.chromium.launch(headless=False, slow_mo=200)
     context = browser.new_context(storage_state="browser_context.json")
@@ -33,7 +25,7 @@ def new_page(context):
 
 def help():
     print("shortcuts available:")
-    for shortcut, command in shortcuts.items():
+    for shortcut, command in play_dynamic.shortcuts.items():
         print(shortcut, " --> ", command)
 
 def play_repl(context, page):
@@ -41,9 +33,11 @@ def play_repl(context, page):
     while True:
         try:
             command = input(">>> ")
+            if command == "":
+                continue
             reload(play_dynamic)
             # if command is a shortcut translate to code and execute
-            command = shortcuts.get(command, command)
+            command = play_dynamic.shortcuts.get(command, command)
             eval(command)
         except Exception as err:
             print(err)
@@ -53,7 +47,6 @@ def main():
         context = get_browser_context(p)
         page = new_page(context)
         play_repl(context, page)
-
 
 if __name__ == "__main__":
     main()
