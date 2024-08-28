@@ -1,5 +1,10 @@
 import requests
 import os.path
+import database
+from importlib import reload
+from pocketbase.utils import ClientResponseError
+
+reload(database)
 
 shortcuts = {
     # shortcut for search
@@ -63,6 +68,21 @@ def shorten_item_url(url):
         raise Exception("marketplace item url does not have an id")
     return shortened
 
+def create_item(href_short, file_name):
+    try:
+        database.get_item_by_url(href_short)
+    except ClientResponseError:
+        print("record doesn't exist... creating it")
+        database.create_item(href_short, file_name)
+
+def donwload_image(href_short, img_src):
+    file_name = f"data/images/{href_short[1:].replace("/", "_")}.jpg"
+    if not os.path.isfile(file_name):
+        image_bin = requests.get(img_src).content
+        with open(file_name, "wb") as file:
+            file.write(image_bin)
+    return file_name
+
 def collect_articles(page):
     counter = 0
     for link in collect_articles_links(page):
@@ -73,11 +93,8 @@ def collect_articles(page):
         if len(imgs) > 0:
             img_src = imgs[0].get_attribute("src")
         print("href: ", href_short, img_src)
-        file_name = f"data/{href_short[1:].replace("/", "_")}.jpg"
-        if not os.path.isfile(file_name):
-            image_bin = requests.get(img_src).content
-            with open(file_name, "wb") as file:
-                file.write(image_bin)
+        file_name = donwload_image(href_short, img_src)
+        create_item(href_full, file_name)
         counter += 1
     print("links: ", counter)
 
