@@ -1,22 +1,3 @@
-"""
-this is for quick development cycle as I reload this module
-dynamically and I update the code to see the changing without
-reloading the script or browser
-
-once the functions in here are well developed and tested
-I'll move them to the main script
-
-the page object has all the methods supported and more:
-page.click(
-page.evaluate(
-page.fill(
-page.get_by_role(
-page.goto(
-page.is_visible(
-page.locator(
-page.set_default_timeout(
-page.wait_for_timeout(
-"""
 import requests
 import os.path
 
