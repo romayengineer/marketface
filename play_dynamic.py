@@ -47,6 +47,9 @@ def div_by_aria_label(page, label):
     return page.locator(f"css=div[aria-label='{label}']")
 
 def collect_articles_links(page):
+    # TODO check why am I getting less items that there actually are
+    # I am getting a few less like 4 less items it's related to the
+    # selector probably
     print("collect articles links")
     s = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div[3]/div[1]/div[2]/div//a"
     collections = page.locator(s).all()
@@ -81,12 +84,13 @@ def shorten_item_url(url):
 def collect_articles(page):
     counter = 0
     for link in collect_articles_links(page):
-        href = link.get_attribute("href")
+        href_full = link.get_attribute("href")
+        href_short = shorten_item_url(href_full)
         imgs = link.locator("xpath=//img").all()
         img_src = ""
         if len(imgs) > 0:
             img_src = imgs[0].get_attribute("src")
-        print("href: ", shorten_item_url(href), img_src)
+        print("href: ", href_short, img_src)
         counter += 1
     print("links: ", counter)
 
