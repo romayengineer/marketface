@@ -1,3 +1,4 @@
+import time
 import requests
 import os.path
 import database
@@ -13,6 +14,7 @@ shortcuts = {
     "t": "play_dynamic.test(page)",
     "l": "play_dynamic.login(page)",
     "c": "play_dynamic.collect_articles(page)",
+    "p": "play_dynamic.pull_articles(page, context)",
     "h": "play_dynamic.help()",
     "exit": "sys.exit(0)",
 }
@@ -94,9 +96,34 @@ def collect_articles(page):
             img_src = imgs[0].get_attribute("src")
         print("href: ", href_short, img_src)
         file_name = donwload_image(href_short, img_src)
-        create_item(href_full, file_name)
+        create_item(href_short, file_name)
         counter += 1
     print("links: ", counter)
+
+def pull_articles(page, context):
+    """
+    similar to collect_articles but this function
+    open each of the urls stored in the database and
+    pulls the title, description, prince and other
+    details of the marketplace items
+
+    shortcut: p
+    """
+    page = 1
+    while True:
+        items = database.get_items_incomplete(page, 10).items
+        if not items:
+            break
+        for item in items:
+            new_page = context.new_page()
+            new_url = f"https://www.facebook.com{item.url}"
+            print("new_url: ", new_url)
+            new_page.goto(new_url)
+            time.sleep(1)
+        inp = input("Continue? (Y/n): ")
+        if inp != "y" and inp != "":
+            break
+        page += 1
 
 def login(page):
     page.goto("https://www.facebook.com")

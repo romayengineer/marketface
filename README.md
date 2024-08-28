@@ -6,7 +6,7 @@ know if a product has a fair price or if it is cheep
 
 ## Plan for the project:
 
-1. create database to insert the url and image path
+1. [DONE] create database to insert the url and image path
 2. open each of the urls and pull title, description, price and other data
 3. query the data and analyse it for decision making
 
