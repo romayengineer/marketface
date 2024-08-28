@@ -52,10 +52,9 @@ def collect_articles_links(page):
     collections = page.locator(s).all()
     for coll in collections:
         href = coll.get_attribute('href')
-        # if "marketplace" not in href:
         if not href.startswith("/marketplace/item/"):
             continue
-        yield href.strip()
+        yield coll
 
 def shorten_item_url(url):
     """
@@ -80,8 +79,16 @@ def shorten_item_url(url):
     return shortened
 
 def collect_articles(page):
+    counter = 0
     for link in collect_articles_links(page):
-        print("href: ", shorten_item_url(link))
+        href = link.get_attribute("href")
+        imgs = link.locator("xpath=//img").all()
+        img_src = ""
+        if len(imgs) > 0:
+            img_src = imgs[0].get_attribute("src")
+        print("href: ", shorten_item_url(href), img_src)
+        counter += 1
+    print("links: ", counter)
 
 def login(page):
     page.goto("https://www.facebook.com")
