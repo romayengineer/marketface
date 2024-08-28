@@ -43,8 +43,45 @@ def help():
     for shortcut, command in shortcuts.items():
         print(shortcut, " --> ", command)
 
+def div_by_aria_label(page, label):
+    return page.locator(f"css=div[aria-label='{label}']")
+
+def collect_articles_links(page):
+    print("collect articles links")
+    s = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div[3]/div[1]/div[2]/div//a"
+    collections = page.locator(s).all()
+    for coll in collections:
+        href = coll.get_attribute('href')
+        # if "marketplace" not in href:
+        if not href.startswith("/marketplace/item/"):
+            continue
+        yield href.strip()
+
+def shorten_item_url(url):
+    """
+    Turns the url to the following format
+    /marketplace/item/<number>
+    """
+    start = "/marketplace/item/"
+    if not url.startswith(start):
+        return url
+    i = len(start)
+    u = len(url)
+    if not u > i:
+        return url
+    str_numbers = [str(n) for n in range(10)]
+    while i < u:
+        if url[i] not in str_numbers:
+            break
+        i += 1
+    shortened = url[:i]
+    if shortened[-1] not in str_numbers:
+        raise Exception("marketplace item url does not have an id")
+    return shortened
+
 def collect_articles(page):
-    print("collect articles")
+    for link in collect_articles_links(page):
+        print("href: ", shorten_item_url(link))
 
 def login(page):
     page.goto("https://www.facebook.com")
