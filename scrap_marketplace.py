@@ -23,11 +23,6 @@ def new_page(context):
     print("New Page")
     return page
 
-def help():
-    print("shortcuts available:")
-    for shortcut, command in play_dynamic.shortcuts.items():
-        print(shortcut, " --> ", command)
-
 def play_repl(context, page):
     help()
     while True:
