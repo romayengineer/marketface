@@ -17,7 +17,8 @@ page.locator(
 page.set_default_timeout(
 page.wait_for_timeout(
 """
-
+import requests
+import os.path
 
 shortcuts = {
     # shortcut for search
@@ -91,6 +92,11 @@ def collect_articles(page):
         if len(imgs) > 0:
             img_src = imgs[0].get_attribute("src")
         print("href: ", href_short, img_src)
+        file_name = f"data/{href_short[1:].replace("/", "_")}.jpg"
+        if not os.path.isfile(file_name):
+            image_bin = requests.get(img_src).content
+            with open(file_name, "wb") as file:
+                file.write(image_bin)
         counter += 1
     print("links: ", counter)
 
