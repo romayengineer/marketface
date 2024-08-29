@@ -3,6 +3,7 @@ import requests
 import os.path
 import database
 from importlib import reload
+from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
 
 reload(database)
@@ -100,6 +101,18 @@ def collect_articles(page):
         counter += 1
     print("links: ", counter)
 
+def get_item_page_details(page):
+    x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
+    try:
+        title = page.locator(x).text_content()
+        # TODO save into pocketbase
+        print("title: ", title)
+    except Exception as err:
+        # if there is any error is ether a timeout
+        # or a redirect and the selector is not found
+        # continue normally
+        print(type(err), err)
+
 def pull_articles(page, context):
     """
     similar to collect_articles but this function
@@ -118,8 +131,14 @@ def pull_articles(page, context):
             new_page = context.new_page()
             new_url = f"https://www.facebook.com{item.url}"
             print("new_url: ", new_url)
-            new_page.goto(new_url)
-            time.sleep(1)
+            try:
+                new_page.goto(new_url)
+            except TimeoutError as err:
+                print("TimeoutError: ", err)
+            time.sleep(2)
+            get_item_page_details(new_page)
+            new_page.close()
+            time.sleep(2)
         inp = input("Continue? (Y/n): ")
         if inp != "y" and inp != "":
             break
