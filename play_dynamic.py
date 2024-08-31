@@ -113,12 +113,17 @@ def if_error_print_and_continue():
         print(type(err), err)
 
 def get_item_page_details(page):
-    x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
+    # TODO save into pocketbase
     title = ""
+    description = ""
+    x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
     with if_error_print_and_continue():
         title = page.locator(x).text_content()
-        # TODO save into pocketbase
         print("title: ", title)
+    x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[5]/div/div[2]/div[1]"
+    with if_error_print_and_continue():
+        description = page.locator(x).text_content()
+        print("description: ", description)
 
 def page_of_items(pages=10):
     page = 1
