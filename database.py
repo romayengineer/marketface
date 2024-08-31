@@ -2,6 +2,7 @@ import sys
 from pocketbase import PocketBase
 from pocketbase.utils import ClientResponseError
 
+#TODO use a config file for this
 client = PocketBase('http://127.0.0.1:8090')
 
 admin_data = None
@@ -33,6 +34,20 @@ def get_items_incomplete(start, count):
     title description price and other details
     """
     return get_items_list(start, count, 'title = ""')
+
+def update_item_by_url(url, title, price, description):
+    record = get_item_by_url(url)
+    if not record:
+        return False
+    rid = record.id
+    print("Record ID: ", rid)
+    body_params = {
+        "title": title,
+        "price": price,
+        "description": description,
+    }
+    client.collection("items").update(rid, body_params)
+    return True
 
 def create_item(url, img_path):
     client.collection("items").create({

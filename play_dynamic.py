@@ -24,6 +24,7 @@ shortcuts = {
 # common xpath that is used in all other xpaths
 xbase = "/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div"
 xdetails = "/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]"
+# these are all the xpath being used in this script
 xtitle = f"xpath={xbase}{xdetails}/div[1]/h1/span"
 xprice = f"xpath={xbase}{xdetails}/div[1]/div[1]/div/span"
 xdesc = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
