@@ -21,6 +21,16 @@ shortcuts = {
     "exit": "sys.exit(0)",
 }
 
+# common xpath that is used in all other xpaths
+xbase = "/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div"
+
+lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)]
+uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)]
+letters = lowercase + uppercase
+numbers = [str(n) for n in range(10)]
+especial = [" ", "'", '"', ".", ",", ";", "!", "?", "_", "-"]
+alphabet = letters + numbers + especial
+
 def help():
     print("Getting started tutorial:")
     print("")
@@ -42,7 +52,7 @@ def collect_articles_links(page):
     # I am getting a few less like 4 less items it's related to the
     # selector probably
     print("collect articles links")
-    s = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div[3]/div[1]/div[2]/div//a"
+    s = f"xpath={xbase}/div[3]/div[1]/div[2]/div//a"
     collections = page.locator(s).all()
     for coll in collections:
         href = coll.get_attribute('href')
@@ -112,13 +122,6 @@ def if_error_print_and_continue():
         # continue normally
         print(type(err), err)
 
-lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)]
-uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)]
-letters = lowercase + uppercase
-numbers = [str(n) for n in range(10)]
-especial = [" ", "'", '"', ".", ",", ";", "!", "?", "_", "-"]
-alphabet = letters + numbers + especial
-
 def oneline(text):
     """
     puts everything in one line and removes unwanted characters
@@ -150,11 +153,16 @@ def get_item_page_details(page):
     # TODO save into pocketbase
     title = ""
     description = ""
-    x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
+    price = ""
+    x = f"xpath={xbase}/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
     with if_error_print_and_continue():
         title = oneline(page.locator(x).text_content())
         print("title: ", title)
-    x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[5]/div/div[2]/div[1]"
+    x = f"xpath={xbase}/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/div[1]/div/span"
+    with if_error_print_and_continue():
+        price = oneline(page.locator(x).text_content())
+        print("price: ", price)
+    x = f"xpath={xbase}/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[5]/div/div[2]/div[1]"
     with if_error_print_and_continue():
         description = oneline(page.locator(x).text_content())
         print("description: ", description)
