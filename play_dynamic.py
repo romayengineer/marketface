@@ -27,6 +27,8 @@ xdetails = "/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]"
 xtitle = f"xpath={xbase}{xdetails}/div[1]/h1/span"
 xprice = f"xpath={xbase}{xdetails}/div[1]/div[1]/div/span"
 xdesc = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
+xlinks = f"xpath={xbase}/div[3]/div[1]/div[2]/div//a"
+ximg = "xpath=//img"
 
 lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)]
 uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)]
@@ -56,8 +58,7 @@ def collect_articles_links(page):
     # I am getting a few less like 4 less items it's related to the
     # selector probably
     print("collect articles links")
-    s = f"xpath={xbase}/div[3]/div[1]/div[2]/div//a"
-    collections = page.locator(s).all()
+    collections = page.locator(xlinks).all()
     for coll in collections:
         href = coll.get_attribute('href')
         if not href.startswith("/marketplace/item/"):
@@ -106,7 +107,7 @@ def collect_articles(page):
     for link in collect_articles_links(page):
         href_full = link.get_attribute("href")
         href_short = shorten_item_url(href_full)
-        imgs = link.locator("xpath=//img").all()
+        imgs = link.locator(ximg).all()
         img_src = ""
         if len(imgs) > 0:
             img_src = imgs[0].get_attribute("src")
