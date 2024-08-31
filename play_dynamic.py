@@ -112,17 +112,51 @@ def if_error_print_and_continue():
         # continue normally
         print(type(err), err)
 
+lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)]
+uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)]
+letters = lowercase + uppercase
+numbers = [str(n) for n in range(10)]
+especial = [" ", "'", '"', ".", ",", ";", "!", "?", "_", "-"]
+alphabet = letters + numbers + especial
+
+def oneline(text):
+    """
+    puts everything in one line and removes unwanted characters
+    like for example emojis
+    """
+    text = text.replace("\n", " ")
+    newText = ""
+    i = 0
+    while i < len(text):
+        c = text[i]
+        if c == " ":
+            newText += " "
+            i += 1
+            while i < len(text):
+                c = text[i]
+                if c == " ":
+                    i += 1
+                else:
+                    break
+            continue
+        if c not in alphabet:
+            i += 1
+            continue
+        newText += c
+        i += 1
+    return newText.strip()
+
 def get_item_page_details(page):
     # TODO save into pocketbase
     title = ""
     description = ""
     x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
     with if_error_print_and_continue():
-        title = page.locator(x).text_content()
+        title = oneline(page.locator(x).text_content())
         print("title: ", title)
     x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[5]/div/div[2]/div[1]"
     with if_error_print_and_continue():
-        description = page.locator(x).text_content()
+        description = oneline(page.locator(x).text_content())
         print("description: ", description)
 
 def page_of_items(pages=10):
