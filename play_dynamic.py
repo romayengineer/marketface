@@ -155,18 +155,49 @@ def oneline(text):
         i += 1
     return newText.strip()
 
-def get_item_page_details(page):
+def get_item_page_details(url, page):
     # TODO save into pocketbase
     title = ""
     description = ""
-    price = ""
+    priceStr = ""
+    price = 0 # price without currency
+    priceArs = 0 # price in Argentinian Pesos
+    priceUsd = 0 # price in Dollars
+    isUsd = False
+    #TODO update this rate put it somewhere else
+    # exchange rate of 2024-08-31
+    usdArsRate = 1350.00
     with if_error_print_and_continue():
         title = oneline(page.locator(xtitle).text_content())
-        price = oneline(page.locator(xprice).text_content())
+        priceStr = oneline(page.locator(xprice).text_content())
         description = oneline(page.locator(xdesc).text_content())
     print("title: ", title)
-    print("price: ", price)
+    print("price: ", priceStr)
     print("description: ", description)
+    # if you are in a different location change this rate convertion logic
+    if not priceStr.startswith("ARS"):
+        raise Exception("Currency must be in ARS!")
+    # remove first 3 characters from ARS
+    # so far nobody use cents but if they do this will fail
+    # conver to float in that case
+    price = int(priceStr.partition(" ")[0][3:].replace(",", ""))
+    if price < 10000:
+        priceUsd = price
+        priceArs = round(price * usdArsRate, 2)
+        isUsd = True
+    else:
+        priceUsd = round(price / usdArsRate, 2)
+        priceArs = price
+        isUsd = False
+    print("priceUsd: ", priceUsd)
+    print("priceArs: ", priceArs)
+    print("isUsd: ", isUsd)
+    database.update_item_by_url(
+        url, title,
+        priceArs, priceUsd, usdArsRate,
+        isUsd,
+        description
+    )
 
 def page_of_items(pages=10):
     page = 1
@@ -201,7 +232,7 @@ def pull_articles(page, context):
         except TimeoutError as err:
             print("TimeoutError: ", err)
         time.sleep(2)
-        get_item_page_details(new_page)
+        get_item_page_details(item.url, new_page)
         new_page.close()
         time.sleep(2)
 

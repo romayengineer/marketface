@@ -35,7 +35,7 @@ def get_items_incomplete(start, count):
     """
     return get_items_list(start, count, 'title = ""')
 
-def update_item_by_url(url, title, price, description):
+def update_item_by_url(url, title, priceArs, priceUsd, usdArsRate, isUsd, description):
     record = get_item_by_url(url)
     if not record:
         return False
@@ -43,7 +43,10 @@ def update_item_by_url(url, title, price, description):
     print("Record ID: ", rid)
     body_params = {
         "title": title,
-        "price": price,
+        "priceArs": priceArs,
+        "priceUsd": priceUsd,
+        "usdArsRate": usdArsRate,
+        "usd": isUsd,
         "description": description,
     }
     client.collection("items").update(rid, body_params)
