@@ -31,11 +31,11 @@ xdesc = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
 xlinks = f"xpath={xbase}/div[3]/div[1]/div[2]/div//a"
 ximg = "xpath=//img"
 
-lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)]
-uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)]
+lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)] + ["ñ"] # Spanish letter
+uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)] + ["Ñ"]
 letters = lowercase + uppercase
 numbers = [str(n) for n in range(10)]
-especial = [" ", "'", '"', ".", ",", ";", "!", "?", "_", "-"]
+especial = [" ", "’", "'", '"', ".", ",", ";", "!", "?", "_", "-", "/", "\\", "|", "(", ")", "[", "]", "{", "}"]
 alphabet = letters + numbers + especial
 
 def help():
@@ -155,12 +155,23 @@ def oneline(text):
         i += 1
     return newText.strip()
 
+def firstnumbers(numberStr):
+    i = 0
+    newNumber = ""
+    while i < len(numberStr):
+        c = numberStr[i]
+        if c not in numbers:
+            break
+        newNumber += c
+        i += 1
+    return newNumber
+
 def get_item_page_details(url, page):
     # TODO save into pocketbase
     title = ""
     description = ""
     priceStr = ""
-    price = 0 # price without currency
+    price = "" # price without currency
     priceArs = 0 # price in Argentinian Pesos
     priceUsd = 0 # price in Dollars
     isUsd = False
@@ -175,12 +186,22 @@ def get_item_page_details(url, page):
     print("price: ", priceStr)
     print("description: ", description)
     # if you are in a different location change this rate convertion logic
-    if not priceStr.startswith("ARS"):
+    if priceStr.startswith("ARS"):
+        # remove first 3 characters from ARS
+        # so far nobody use cents but if they do this will fail
+        # conver to float in that case
+        price = priceStr.partition(" ")[0][3:].replace(",", "")
+    elif priceStr[0] in numbers:
+        price = priceStr.partition(" ")[0].replace(",", "")
+    else:
         raise Exception("Currency must be in ARS!")
-    # remove first 3 characters from ARS
-    # so far nobody use cents but if they do this will fail
-    # conver to float in that case
-    price = int(priceStr.partition(" ")[0][3:].replace(",", ""))
+    # somethimes the price is followed by a scratched old price
+    # the text_content puts this text on the same word meaning
+    # it is not separaated by an space in that case only
+    # get the first numbers and ignore everything after that
+    # e.g the price may look like this ARS200000ARS230000
+    # in this case we want the first price 200000
+    price = int(firstnumbers(price))
     if price < 10000:
         priceUsd = price
         priceArs = round(price * usdArsRate, 2)
@@ -206,6 +227,9 @@ def page_of_items(pages=10):
         if not items:
             break
         for item in items:
+            # filter deleted elements
+            if item.deleted:
+                continue
             yield item
         inp = input("Continue? (Y/n): ")
         if inp != "y" and inp != "":
@@ -223,7 +247,7 @@ def pull_articles(page, context):
     shortcut: p
     """
     #TODO remove pages=1 is just for testing and get only one
-    for item in page_of_items(pages=1):
+    for item in page_of_items():
         new_page = context.new_page()
         new_url = f"https://www.facebook.com{item.url}"
         print("new_url: ", new_url)
