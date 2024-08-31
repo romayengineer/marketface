@@ -24,6 +24,9 @@ shortcuts = {
 # common xpath that is used in all other xpaths
 xbase = "/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div"
 xdetails = "/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]"
+xtitle = f"xpath={xbase}{xdetails}/div[1]/h1/span"
+xprice = f"xpath={xbase}{xdetails}/div[1]/div[1]/div/span"
+xdesc = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
 
 lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)]
 uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)]
@@ -155,18 +158,13 @@ def get_item_page_details(page):
     title = ""
     description = ""
     price = ""
-    x = f"xpath={xbase}{xdetails}/div[1]/h1/span"
     with if_error_print_and_continue():
-        title = oneline(page.locator(x).text_content())
-        print("title: ", title)
-    x = f"xpath={xbase}{xdetails}/div[1]/div[1]/div/span"
-    with if_error_print_and_continue():
-        price = oneline(page.locator(x).text_content())
-        print("price: ", price)
-    x = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
-    with if_error_print_and_continue():
-        description = oneline(page.locator(x).text_content())
-        print("description: ", description)
+        title = oneline(page.locator(xtitle).text_content())
+        price = oneline(page.locator(xprice).text_content())
+        description = oneline(page.locator(xdesc).text_content())
+    print("title: ", title)
+    print("price: ", price)
+    print("description: ", description)
 
 def page_of_items(pages=10):
     page = 1
@@ -191,7 +189,8 @@ def pull_articles(page, context):
 
     shortcut: p
     """
-    for item in page_of_items():
+    #TODO remove pages=1 is just for testing and get only one
+    for item in page_of_items(pages=1):
         new_page = context.new_page()
         new_url = f"https://www.facebook.com{item.url}"
         print("new_url: ", new_url)
