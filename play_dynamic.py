@@ -113,6 +113,20 @@ def get_item_page_details(page):
         # continue normally
         print(type(err), err)
 
+def page_of_items():
+    page = 1
+    while True:
+        items = database.get_items_incomplete(page, 10).items
+        if not items:
+            break
+        for item in items:
+            yield item
+        inp = input("Continue? (Y/n): ")
+        if inp != "y" and inp != "":
+            break
+        page += 1
+
+
 def pull_articles(page, context):
     """
     similar to collect_articles but this function
@@ -122,27 +136,19 @@ def pull_articles(page, context):
 
     shortcut: p
     """
-    page = 1
-    while True:
-        items = database.get_items_incomplete(page, 10).items
-        if not items:
-            break
-        for item in items:
-            new_page = context.new_page()
-            new_url = f"https://www.facebook.com{item.url}"
-            print("new_url: ", new_url)
-            try:
-                new_page.goto(new_url)
-            except TimeoutError as err:
-                print("TimeoutError: ", err)
-            time.sleep(2)
-            get_item_page_details(new_page)
-            new_page.close()
-            time.sleep(2)
-        inp = input("Continue? (Y/n): ")
-        if inp != "y" and inp != "":
-            break
-        page += 1
+    for item in page_of_items():
+        new_page = context.new_page()
+        new_url = f"https://www.facebook.com{item.url}"
+        print("new_url: ", new_url)
+        try:
+            new_page.goto(new_url)
+        except TimeoutError as err:
+            print("TimeoutError: ", err)
+        time.sleep(2)
+        get_item_page_details(new_page)
+        new_page.close()
+        time.sleep(2)
+
 
 def login(page):
     page.goto("https://www.facebook.com")
