@@ -23,6 +23,7 @@ shortcuts = {
 
 # common xpath that is used in all other xpaths
 xbase = "/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div"
+xdetails = "/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]"
 
 lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)]
 uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)]
@@ -154,15 +155,15 @@ def get_item_page_details(page):
     title = ""
     description = ""
     price = ""
-    x = f"xpath={xbase}/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
+    x = f"xpath={xbase}{xdetails}/div[1]/h1/span"
     with if_error_print_and_continue():
         title = oneline(page.locator(x).text_content())
         print("title: ", title)
-    x = f"xpath={xbase}/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/div[1]/div/span"
+    x = f"xpath={xbase}{xdetails}/div[1]/div[1]/div/span"
     with if_error_print_and_continue():
         price = oneline(page.locator(x).text_content())
         print("price: ", price)
-    x = f"xpath={xbase}/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[5]/div/div[2]/div[1]"
+    x = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
     with if_error_print_and_continue():
         description = oneline(page.locator(x).text_content())
         print("description: ", description)
