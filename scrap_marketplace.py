@@ -24,6 +24,7 @@ def new_page(context):
     return page
 
 def play_repl(context, page):
+    # eval may use context and/or page so keep these arguments
     help()
     while True:
         try:

@@ -5,6 +5,7 @@ import database
 from importlib import reload
 from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
+from contextlib import contextmanager
 
 reload(database)
 
@@ -101,22 +102,28 @@ def collect_articles(page):
         counter += 1
     print("links: ", counter)
 
-def get_item_page_details(page):
-    x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
+@contextmanager
+def if_error_print_and_continue():
     try:
-        title = page.locator(x).text_content()
-        # TODO save into pocketbase
-        print("title: ", title)
+        yield
     except Exception as err:
         # if there is any error is ether a timeout
         # or a redirect and the selector is not found
         # continue normally
         print(type(err), err)
 
-def page_of_items():
+def get_item_page_details(page):
+    x = "xpath=/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/div[1]/h1/span"
+    title = ""
+    with if_error_print_and_continue():
+        title = page.locator(x).text_content()
+        # TODO save into pocketbase
+        print("title: ", title)
+
+def page_of_items(pages=10):
     page = 1
     while True:
-        items = database.get_items_incomplete(page, 10).items
+        items = database.get_items_incomplete(page, pages).items
         if not items:
             break
         for item in items:
