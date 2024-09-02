@@ -58,7 +58,7 @@ def collect_articles_links(page):
     # TODO check why am I getting less items that there actually are
     # I am getting a few less like 4 less items it's related to the
     # selector probably
-    print("collect articles links")
+    # print("collect articles links")
     collections = page.locator(xlinks).all()
     for coll in collections:
         href = coll.get_attribute('href')
@@ -93,6 +93,7 @@ def create_item(href_short, file_name):
         database.get_item_by_url(href_short)
     except ClientResponseError:
         print("record doesn't exist... creating it")
+        print("href_short: ", href_short)
         database.create_item(href_short, file_name)
 
 def donwload_image(href_short, img_src):
@@ -112,11 +113,11 @@ def collect_articles(page):
         img_src = ""
         if len(imgs) > 0:
             img_src = imgs[0].get_attribute("src")
-        print("href: ", href_short, img_src)
+        # print("href: ", href_short, img_src)
         file_name = donwload_image(href_short, img_src)
         create_item(href_short, file_name)
         counter += 1
-    print("links: ", counter)
+    # print("links: ", counter)
 
 @contextmanager
 def if_error_print_and_continue():
@@ -186,12 +187,12 @@ def get_item_page_details(url, page):
     print("price: ", priceStr)
     print("description: ", description)
     # if you are in a different location change this rate convertion logic
-    if priceStr.startswith("ARS"):
+    if priceStr and priceStr.startswith("ARS"):
         # remove first 3 characters from ARS
         # so far nobody use cents but if they do this will fail
         # conver to float in that case
         price = priceStr.partition(" ")[0][3:].replace(",", "")
-    elif priceStr[0] in numbers:
+    elif priceStr and priceStr[0] in numbers:
         price = priceStr.partition(" ")[0].replace(",", "")
     else:
         raise Exception("Currency must be in ARS!")
@@ -220,7 +221,7 @@ def get_item_page_details(url, page):
         description
     )
 
-def page_of_items(pages=10):
+def page_of_items(pages=100):
     page = 1
     while True:
         items = database.get_items_incomplete(page, pages).items
