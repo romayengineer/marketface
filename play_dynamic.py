@@ -16,6 +16,7 @@ shortcuts = {
     "t": "play_dynamic.test(page)",
     "l": "play_dynamic.login(page)",
     "c": "play_dynamic.collect_articles(page)",
+    "v": "play_dynamic.collect_articles_all(page)",
     "p": "play_dynamic.pull_articles(page, context)",
     "h": "play_dynamic.help()",
     "exit": "sys.exit(0)",
@@ -29,6 +30,7 @@ xtitle = f"xpath={xbase}{xdetails}/div[1]/h1/span"
 xprice = f"xpath={xbase}{xdetails}/div[1]/div[1]/div/span"
 xdesc = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
 xlinks = f"xpath={xbase}/div[3]/div[1]/div[2]/div//a"
+xlinksall = f"xpath={xbase}/div[3]//a"
 ximg = "xpath=//img"
 
 lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)] + ["ñ"] # Spanish letter
@@ -54,12 +56,12 @@ def help():
 def div_by_aria_label(page, label):
     return page.locator(f"css=div[aria-label='{label}']")
 
-def collect_articles_links(page):
+def collect_articles_links(page, xpath):
     # TODO check why am I getting less items that there actually are
     # I am getting a few less like 4 less items it's related to the
     # selector probably
     # print("collect articles links")
-    collections = page.locator(xlinks).all()
+    collections = page.locator(xpath).all()
     for coll in collections:
         href = coll.get_attribute('href')
         if not href.startswith("/marketplace/item/"):
@@ -104,20 +106,31 @@ def donwload_image(href_short, img_src):
             file.write(image_bin)
     return file_name
 
+def collect_item_data(link):
+    href_full = link.get_attribute("href")
+    href_short = shorten_item_url(href_full)
+    imgs = link.locator(ximg).all()
+    img_src = ""
+    if len(imgs) > 0:
+        img_src = imgs[0].get_attribute("src")
+    file_name = donwload_image(href_short, img_src)
+    create_item(href_short, file_name)
+
 def collect_articles(page):
     counter = 0
-    for link in collect_articles_links(page):
-        href_full = link.get_attribute("href")
-        href_short = shorten_item_url(href_full)
-        imgs = link.locator(ximg).all()
-        img_src = ""
-        if len(imgs) > 0:
-            img_src = imgs[0].get_attribute("src")
-        # print("href: ", href_short, img_src)
-        file_name = donwload_image(href_short, img_src)
-        create_item(href_short, file_name)
+    for link in collect_articles_links(page, xlinks):
+        collect_item_data(link)
         counter += 1
-    # print("links: ", counter)
+    print("first ", counter)
+
+def collect_articles_all(page):
+    # collects all articles including the ones
+    # from outside your search
+    counter = 0
+    for link in collect_articles_links(page, xlinksall):
+        collect_item_data(link)
+        counter += 1
+    print("all ", counter)
 
 @contextmanager
 def if_error_print_and_continue():
