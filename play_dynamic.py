@@ -208,7 +208,9 @@ def get_item_page_details(url, page):
     elif priceStr and priceStr[0] in numbers:
         price = priceStr.partition(" ")[0].replace(",", "")
     else:
-        raise Exception("Currency must be in ARS!")
+        database.update_item_deleted(url)
+        print("Currency must be in ARS! marked as deleted!")
+        return
     # somethimes the price is followed by a scratched old price
     # the text_content puts this text on the same word meaning
     # it is not separaated by an space in that case only

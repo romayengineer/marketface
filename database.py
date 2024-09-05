@@ -53,6 +53,18 @@ def update_item_by_url(url, title, priceArs, priceUsd, usdArsRate, isUsd, descri
     client.collection("items").update(rid, body_params)
     return True
 
+def update_item_deleted(url):
+    record = get_item_by_url(url)
+    if not record:
+        return False
+    rid = record.id
+    print("Record ID: ", rid)
+    body_params = {
+        "deleted": True
+    }
+    client.collection("items").update(rid, body_params)
+    return True
+
 def create_item(url, img_path):
     client.collection("items").create({
         "url": url,
