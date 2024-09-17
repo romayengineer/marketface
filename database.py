@@ -1,4 +1,5 @@
 import sys
+from typing import Dict
 from pocketbase import PocketBase
 from pocketbase.utils import ClientResponseError
 
@@ -36,34 +37,20 @@ def get_items_incomplete(start, count):
     """
     return get_items_list(start, count, 'title = ""')
 
-def update_item_by_url(url, title, priceArs, priceUsd, usdArsRate, isUsd, description):
+def update_item_by_url(url: str, body_params: Dict) -> bool:
     record = get_item_by_url(url)
     if not record:
         return False
     rid = record.id
-    print("Record ID: ", rid)
-    body_params = {
-        "title": title,
-        "priceArs": priceArs,
-        "priceUsd": priceUsd,
-        "usdArsRate": usdArsRate,
-        "usd": isUsd,
-        "description": description,
-    }
     client.collection("items").update(rid, body_params)
     return True
 
-def update_item_deleted(url):
-    record = get_item_by_url(url)
-    if not record:
-        return False
-    rid = record.id
-    print("Record ID: ", rid)
+def update_item_deleted(url: str) -> bool:
     body_params = {
         "deleted": True
     }
-    client.collection("items").update(rid, body_params)
-    return True
+    print("marked as deleted! ", url)
+    return update_item_by_url(url, body_params)
 
 def create_item(url, img_path):
     client.collection("items").create({

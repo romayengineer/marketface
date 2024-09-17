@@ -14,11 +14,12 @@ shortcuts = {
     "s": "play_dynamic.search(page)",
     # shortcut for quick testing a new function
     "t": "play_dynamic.test(page)",
-    "l": "play_dynamic.login(page)",
-    "c": "play_dynamic.collect_articles(page)",
-    "v": "play_dynamic.collect_articles_all(page)",
+    "l": "play_dynamic.login(page, email, passwd)",
+    "c": "collect_articles(page)",
+    "v": "collect_articles_all(page)",
     "p": "play_dynamic.pull_articles(page, context)",
     "h": "play_dynamic.help()",
+    "u": "play_dynamic.clear_wrong()",
     "exit": "sys.exit(0)",
 }
 
@@ -26,6 +27,7 @@ shortcuts = {
 xbase = "/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div"
 xdetails = "/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]"
 # these are all the xpath being used in this script
+xbody = "xpath=/html/body"
 xtitle = f"xpath={xbase}{xdetails}/div[1]/h1/span"
 xprice = f"xpath={xbase}{xdetails}/div[1]/div[1]/div/span"
 xdesc = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
@@ -39,6 +41,38 @@ letters = lowercase + uppercase
 numbers = [str(n) for n in range(10)]
 especial = [" ", "’", "'", '"', ".", ",", ";", "!", "?", "_", "-", "/", "\\", "|", "(", ")", "[", "]", "{", "}"]
 alphabet = letters + numbers + especial
+
+sepLine = "-" * 30
+
+def clear_wrong():
+    page = 1
+    # query = "priceUsd < 50"
+    query = "deleted = true"
+    items = []
+    while True:
+        new_items = database.get_items_list(page, 100, query).items
+        if not new_items:
+            break
+        items.extend(new_items)
+        page += 1
+    counter = 0
+    for item in items:
+        # if item.title == "":
+        #     continue
+        print(item.url, item.price_usd, item.title)
+        counter += 1
+        # continue # skip update
+        database.update_item_by_url(
+            item.url, 
+            {
+                "title": "",
+                "description": "",
+                "priceUsd": 0,
+                "priceArs": 0,
+                "deleted": False,
+            })
+    print("counter ", counter)
+
 
 def help():
     print("Getting started tutorial:")
@@ -106,31 +140,6 @@ def donwload_image(href_short, img_src):
             file.write(image_bin)
     return file_name
 
-def collect_item_data(link):
-    href_full = link.get_attribute("href")
-    href_short = shorten_item_url(href_full)
-    imgs = link.locator(ximg).all()
-    img_src = ""
-    if len(imgs) > 0:
-        img_src = imgs[0].get_attribute("src")
-    file_name = donwload_image(href_short, img_src)
-    create_item(href_short, file_name)
-
-def collect_articles(page):
-    counter = 0
-    for link in collect_articles_links(page, xlinks):
-        collect_item_data(link)
-        counter += 1
-    print("first ", counter)
-
-def collect_articles_all(page):
-    # collects all articles including the ones
-    # from outside your search
-    counter = 0
-    for link in collect_articles_links(page, xlinksall):
-        collect_item_data(link)
-        counter += 1
-    print("all ", counter)
 
 @contextmanager
 def if_error_print_and_continue():
@@ -193,24 +202,25 @@ def get_item_page_details(url, page):
     # exchange rate of 2024-08-31
     usdArsRate = 1350.00
     with if_error_print_and_continue():
+        if "Esta publicación ya no está disponible" in page.locator(xbody).text_content():
+            database.update_item_deleted(url)
+            return
         title = oneline(page.locator(xtitle).text_content())
         priceStr = oneline(page.locator(xprice).text_content())
         description = oneline(page.locator(xdesc).text_content())
-    print("title: ", title)
-    print("price: ", priceStr)
-    print("description: ", description)
     # if you are in a different location change this rate convertion logic
     if priceStr and priceStr.startswith("ARS"):
         # remove first 3 characters from ARS
         # so far nobody use cents but if they do this will fail
         # conver to float in that case
-        price = priceStr.partition(" ")[0][3:].replace(",", "")
+        price = priceStr.partition(" ")[0][3:]
     elif priceStr and priceStr[0] in numbers:
-        price = priceStr.partition(" ")[0].replace(",", "")
+        price = priceStr.partition(" ")[0]
     else:
         database.update_item_deleted(url)
-        print("Currency must be in ARS! marked as deleted!")
+        print("Currency must be in ARS!")
         return
+    price = price.replace(",", "").replace(".", "")
     # somethimes the price is followed by a scratched old price
     # the text_content puts this text on the same word meaning
     # it is not separaated by an space in that case only
@@ -226,17 +236,24 @@ def get_item_page_details(url, page):
         priceUsd = round(price / usdArsRate, 2)
         priceArs = price
         isUsd = False
-    print("priceUsd: ", priceUsd)
-    print("priceArs: ", priceArs)
-    print("isUsd: ", isUsd)
-    database.update_item_by_url(
-        url, title,
-        priceArs, priceUsd, usdArsRate,
-        isUsd,
-        description
-    )
+    print("title:        ", title)
+    print("price:        ", priceStr)
+    print("priceUsd:     ", priceUsd)
+    print("priceArs:     ", priceArs)
+    print("isUsd:        ", isUsd)
+    print("description:  ", description)
+    print(sepLine)
+    body_params = {
+        "title": title,
+        "priceArs": priceArs,
+        "priceUsd": priceUsd,
+        "usdArsRate": usdArsRate,
+        "usd": isUsd,
+        "description": description,
+    }
+    database.update_item_by_url(url, body_params)
 
-def page_of_items(pages=100):
+def page_of_items(pages=1000):
     page = 1
     while True:
         items = database.get_items_incomplete(page, pages).items
@@ -277,8 +294,16 @@ def pull_articles(page, context):
         time.sleep(2)
 
 
-def login(page):
-    page.goto("https://www.facebook.com")
+def login(page, email: str, passwd: str) -> bool:
+    #TODO log error
+    try:
+        page.goto("https://www.facebook.com")
+        page.fill("input#email", email)
+        page.fill("input#pass", passwd)
+        page.click("button[type='submit']")
+        return True
+    except Exception:
+        return False
 
 def search(page):
     page.goto("https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook&exact=false")
