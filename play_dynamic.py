@@ -6,6 +6,8 @@ from importlib import reload
 from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
 from contextlib import contextmanager
+#TODO
+# from utils import shorten_item_url
 
 reload(database)
 
@@ -101,27 +103,6 @@ def collect_articles_links(page, xpath):
         if not href.startswith("/marketplace/item/"):
             continue
         yield coll
-
-def shorten_item_url(url):
-    """
-    Turns the url to the following format
-    /marketplace/item/<number>
-    """
-    start = "/marketplace/item/"
-    if not url.startswith(start):
-        return url
-    i = len(start)
-    u = len(url)
-    if not u > i:
-        return url
-    while i < u:
-        if not url[i].isdigit():
-            break
-        i += 1
-    shortened = url[:i]
-    if not shortened[-1].isdigit():
-        raise Exception("marketplace item url does not have an id")
-    return shortened
 
 def create_item(href_short, file_name):
     try:
