@@ -1,3 +1,18 @@
+"""
+Interactive shell for scraping facebook's marketplace
+
+This module provides a set of functions to open the browser
+and interact with it in an interactive shell.
+
+The functions are:
+
+* `login`: login to facebook
+* `search`: search for something in the marketplace
+* `collect_articles`: collects the articles from the current page
+* `collect_articles_all`: collects all articles from the current page
+* `shorten_item_url`: shorten the url of an item
+* `pull_articles`: pull the data from each of the articles
+"""
 import time
 import requests
 import os.path
@@ -77,6 +92,10 @@ def clear_wrong():
 
 
 def help():
+    """
+    Prints the getting started tutorial for the
+    interactive shell
+    """
     print("Getting started tutorial:")
     print("")
     print("1. run `l` this will load facebook's login page")
@@ -113,6 +132,13 @@ def create_item(href_short, file_name):
         database.create_item(href_short, file_name)
 
 def donwload_image(href_short, img_src):
+    """
+    Downloads an image from img_src and saves it to a file
+    with the name of the href_short but with "/" replaced
+    with "_" and ".jpg" at the end
+
+    If the file already exists it doesn't download it again
+    """
     file_name = f"data/images/{href_short[1:].replace("/", "_")}.jpg"
     if not os.path.isfile(file_name):
         image_bin = requests.get(img_src).content
