@@ -29,7 +29,7 @@ def shorten_item_url(url):
     # of the string up to the last non digit character
     shortened = url[:i]
     # the last character of the shortened url must be a digit
-    if not shortened[-1].isdigit():
-        raise Exception("marketplace item url does not have an id")
+    # if not shortened[-1].isdigit():
+    #     raise Exception("marketplace item url does not have an id")
     # return the shortened url
     return shortened
