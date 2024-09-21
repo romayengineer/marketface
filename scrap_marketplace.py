@@ -55,7 +55,7 @@ def play_repl(context, page):
     # these variables are used dynamically by eval
     email = args.Email
     passwd = args.Password
-    help()
+    play_dynamic.help()
     while True:
         try:
             command = input(">>> ").strip()

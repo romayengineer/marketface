@@ -114,13 +114,12 @@ def shorten_item_url(url):
     u = len(url)
     if not u > i:
         return url
-    str_numbers = [str(n) for n in range(10)]
     while i < u:
-        if url[i] not in str_numbers:
+        if not url[i].isdigit():
             break
         i += 1
     shortened = url[:i]
-    if shortened[-1] not in str_numbers:
+    if not shortened[-1].isdigit():
         raise Exception("marketplace item url does not have an id")
     return shortened
 
