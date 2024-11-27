@@ -4,6 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+sqlalchemy = {extras = ["postgresql"], version = "*"}
 anyio = "*"
 certifi = "*"
 charset-normalizer = "*"

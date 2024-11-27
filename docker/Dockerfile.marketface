@@ -1,5 +1,9 @@
 FROM python:3.13
 
+# Upgrade pip
+RUN pip install --upgrade pip setuptools wheel pipenv
+
+# Install dependencies
 RUN apt update -y \
     && \
     apt install -y \
@@ -7,7 +11,7 @@ RUN apt update -y \
     sudo \
     vim
 
-# Create a non-root user
+# Create marketface user
 RUN adduser \
     --system \
     --group \
@@ -16,27 +20,31 @@ RUN adduser \
     --home /home/marketface \
     marketface
 
-RUN pip install --upgrade pip setuptools wheel pipenv
+# Add marketface user to sudo group
+RUN usermod -aG sudo marketface
+
+# Add sudo without password
+RUN echo '%sudo ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+# Set working directory
+WORKDIR /home/marketface
 
 # Copy files
 COPY ./Pipfile ./Pipfile
-COPY ./Pipfile.lock ./Pipfile.lock
+
+# Lock dependencies
+RUN pipenv lock --clear
+
+# Remove virtualenv
+RUN rm -rf /root/.local/share/virtualenvs/marketface-*
 
 # Install dependencies
 RUN pipenv install --system
 
+# Install playwright dependencies
 RUN playwright install-deps
 
+# Install chromium for playwright
 RUN playwright install chromium
 
-# Add user to wheel group
-RUN usermod -aG sudo marketface
-
-# Add user to sudo group
-RUN echo '%sudo ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
-
 USER marketface
-
-WORKDIR /home/marketface
-
-RUN echo 'PATH=$PATH:/home/marketface/.local/bin' >> /home/marketface/.bashrc
