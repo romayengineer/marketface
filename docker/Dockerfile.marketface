@@ -1,0 +1,21 @@
+FROM python:3.13-alpine
+
+# Install dependencies
+RUN apk update \
+    && \
+    apk add \
+    bash \
+    postgresql-client \
+    shadow \
+    sudo
+
+# Create a non-root user
+RUN adduser -D marketface
+
+# Add user to wheel group
+RUN usermod -aG wheel marketface
+
+# Add user to sudo group
+RUN echo '%wheel ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
+
+USER marketface

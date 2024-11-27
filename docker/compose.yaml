@@ -1,0 +1,34 @@
+---
+services:
+    marketface-postgresql-build:
+        build:
+            context: .
+            dockerfile: Dockerfile.postgresql
+        entrypoint: echo 'BUILT'
+        image: marketface-postgresql
+    marketface-build:
+        build:
+            context: .
+            dockerfile: ./Dockerfile.marketface
+        entrypoint: echo 'BUILT'
+        image: marketface
+    marketface-postgresql:
+        depends_on:
+            marketface-postgresql-build:
+                condition: service_completed_successfully
+        image: marketface-postgresql
+        hostname: marketface-postgresql
+        container_name: marketface-postgresql
+        environment:
+            POSTGRES_PASSWORD: password
+    marketface:
+        depends_on:
+            marketface-postgresql:
+                condition: service_started
+        image: marketface
+        hostname: marketface
+        container_name: marketface
+        entrypoint: tail -F /whatever
+networks:
+    marketface_network:
+        driver: bridge 
