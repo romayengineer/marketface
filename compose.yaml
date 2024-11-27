@@ -3,13 +3,13 @@ services:
     marketface-postgresql-build:
         build:
             context: .
-            dockerfile: Dockerfile.postgresql
+            dockerfile: ./docker/Dockerfile.postgresql
         entrypoint: echo 'BUILT'
         image: marketface-postgresql
     marketface-build:
         build:
             context: .
-            dockerfile: ./Dockerfile.marketface
+            dockerfile: ./docker/Dockerfile.marketface
         entrypoint: echo 'BUILT'
         image: marketface
     marketface-postgresql:
@@ -28,6 +28,8 @@ services:
         image: marketface
         hostname: marketface
         container_name: marketface
+        volumes:
+            - ./marketface:/home/marketface/marketface
         entrypoint: tail -F /whatever
 networks:
     marketface_network:

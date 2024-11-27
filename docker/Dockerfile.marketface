@@ -1,21 +1,42 @@
-FROM python:3.13-alpine
+FROM python:3.13
 
-# Install dependencies
-RUN apk update \
+RUN apt update -y \
     && \
-    apk add \
-    bash \
+    apt install -y \
     postgresql-client \
-    shadow \
-    sudo
+    sudo \
+    vim
 
 # Create a non-root user
-RUN adduser -D marketface
+RUN adduser \
+    --system \
+    --group \
+    --disabled-password \
+    --shell /bin/bash \
+    --home /home/marketface \
+    marketface
+
+RUN pip install --upgrade pip setuptools wheel pipenv
+
+# Copy files
+COPY ./Pipfile ./Pipfile
+COPY ./Pipfile.lock ./Pipfile.lock
+
+# Install dependencies
+RUN pipenv install --system
+
+RUN playwright install-deps
+
+RUN playwright install chromium
 
 # Add user to wheel group
-RUN usermod -aG wheel marketface
+RUN usermod -aG sudo marketface
 
 # Add user to sudo group
-RUN echo '%wheel ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
+RUN echo '%sudo ALL=(ALL:ALL) NOPASSWD: ALL' >> /etc/sudoers
 
 USER marketface
+
+WORKDIR /home/marketface
+
+RUN echo 'PATH=$PATH:/home/marketface/.local/bin' >> /home/marketface/.bashrc
