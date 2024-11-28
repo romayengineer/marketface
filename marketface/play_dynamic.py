@@ -13,15 +13,18 @@ The functions are:
 * `shorten_item_url`: shorten the url of an item
 * `pull_articles`: pull the data from each of the articles
 """
-import time
-import requests
+
 import os.path
-import database
+import time
+from contextlib import contextmanager
 from importlib import reload
+
+import database
+import requests
 from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
-from contextlib import contextmanager
-#TODO
+
+# TODO
 # from utils import shorten_item_url
 
 reload(database)
@@ -41,7 +44,9 @@ shortcuts = {
 }
 
 # common xpath that is used in all other xpaths
-xbase = "/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div"
+xbase = (
+    "/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div"
+)
 xdetails = "/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]"
 # these are all the xpath being used in this script
 xbody = "xpath=/html/body"
@@ -52,14 +57,36 @@ xlinks = f"xpath={xbase}/div[3]/div[1]/div[2]/div//a"
 xlinksall = f"xpath={xbase}/div[3]//a"
 ximg = "xpath=//img"
 
-lowercase = [chr(n) for n in range(ord('a'), ord('a') + 26)] + ["ñ"] # Spanish letter
-uppercase = [chr(n) for n in range(ord('A'), ord('A') + 26)] + ["Ñ"]
+lowercase = [chr(n) for n in range(ord("a"), ord("a") + 26)] + ["ñ"]  # Spanish letter
+uppercase = [chr(n) for n in range(ord("A"), ord("A") + 26)] + ["Ñ"]
 letters = lowercase + uppercase
 numbers = [str(n) for n in range(10)]
-especial = [" ", "’", "'", '"', ".", ",", ";", "!", "?", "_", "-", "/", "\\", "|", "(", ")", "[", "]", "{", "}"]
+especial = [
+    " ",
+    "’",
+    "'",
+    '"',
+    ".",
+    ",",
+    ";",
+    "!",
+    "?",
+    "_",
+    "-",
+    "/",
+    "\\",
+    "|",
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+]
 alphabet = letters + numbers + especial
 
 sepLine = "-" * 30
+
 
 def clear_wrong():
     page = 1
@@ -80,14 +107,15 @@ def clear_wrong():
         counter += 1
         # continue # skip update
         database.update_item_by_url(
-            item.url, 
+            item.url,
             {
-                "title": "",
-                "description": "",
-                "priceUsd": 0,
-                "priceArs": 0,
                 "deleted": False,
-            })
+                "description": "",
+                "priceArs": 0,
+                "priceUsd": 0,
+                "title": "",
+            },
+        )
     print("counter ", counter)
 
 
@@ -108,8 +136,10 @@ def help():
     for shortcut, command in shortcuts.items():
         print(shortcut, " --> ", command)
 
+
 def div_by_aria_label(page, label):
     return page.locator(f"css=div[aria-label='{label}']")
+
 
 def collect_articles_links(page, xpath):
     # TODO check why am I getting less items that there actually are
@@ -118,10 +148,11 @@ def collect_articles_links(page, xpath):
     # print("collect articles links")
     collections = page.locator(xpath).all()
     for coll in collections:
-        href = coll.get_attribute('href')
+        href = coll.get_attribute("href")
         if not href.startswith("/marketplace/item/"):
             continue
         yield coll
+
 
 def create_item(href_short, file_name):
     try:
@@ -130,6 +161,7 @@ def create_item(href_short, file_name):
         print("record doesn't exist... creating it")
         print("href_short: ", href_short)
         database.create_item(href_short, file_name)
+
 
 def donwload_image(href_short, img_src):
     """
@@ -156,6 +188,7 @@ def if_error_print_and_continue():
         # or a redirect and the selector is not found
         # continue normally
         print(type(err), err)
+
 
 def oneline(text):
     """
@@ -184,6 +217,7 @@ def oneline(text):
         i += 1
     return newText.strip()
 
+
 def firstnumbers(numberStr):
     i = 0
     newNumber = ""
@@ -195,20 +229,24 @@ def firstnumbers(numberStr):
         i += 1
     return newNumber
 
+
 def get_item_page_details(url, page):
     # TODO save into pocketbase
     title = ""
     description = ""
     priceStr = ""
-    price = "" # price without currency
-    priceArs = 0 # price in Argentinian Pesos
-    priceUsd = 0 # price in Dollars
+    price = ""  # price without currency
+    priceArs = 0  # price in Argentinian Pesos
+    priceUsd = 0  # price in Dollars
     isUsd = False
-    #TODO update this rate put it somewhere else
+    # TODO update this rate put it somewhere else
     # exchange rate of 2024-08-31
     usdArsRate = 1350.00
     with if_error_print_and_continue():
-        if "Esta publicación ya no está disponible" in page.locator(xbody).text_content():
+        if (
+            "Esta publicación ya no está disponible"
+            in page.locator(xbody).text_content()
+        ):
             database.update_item_deleted(url)
             return
         title = oneline(page.locator(xtitle).text_content())
@@ -250,14 +288,15 @@ def get_item_page_details(url, page):
     print("description:  ", description)
     print(sepLine)
     body_params = {
-        "title": title,
+        "description": description,
         "priceArs": priceArs,
         "priceUsd": priceUsd,
-        "usdArsRate": usdArsRate,
+        "title": title,
         "usd": isUsd,
-        "description": description,
+        "usdArsRate": usdArsRate,
     }
     database.update_item_by_url(url, body_params)
+
 
 def page_of_items(pages=1000):
     page = 1
@@ -285,7 +324,7 @@ def pull_articles(page, context):
 
     shortcut: p
     """
-    #TODO remove pages=1 is just for testing and get only one
+    # TODO remove pages=1 is just for testing and get only one
     for item in page_of_items():
         new_page = context.new_page()
         new_url = f"https://www.facebook.com{item.url}"
@@ -301,7 +340,7 @@ def pull_articles(page, context):
 
 
 def login(page, email: str, passwd: str) -> bool:
-    #TODO log error
+    # TODO log error
     try:
         page.goto("https://www.facebook.com")
         page.fill("input#email", email)
@@ -311,8 +350,12 @@ def login(page, email: str, passwd: str) -> bool:
     except Exception:
         return False
 
+
 def search(page):
-    page.goto("https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook&exact=false")
+    page.goto(
+        "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook&exact=false"
+    )
+
 
 def test(page):
     login(page)

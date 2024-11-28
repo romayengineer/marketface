@@ -3,6 +3,7 @@ venv
 __pycache__
 data
 pb_data
+Pipfile.lock
 .DS_Store
 .ipynb_checkpoints
 
