@@ -20,9 +20,11 @@ from contextlib import contextmanager
 from importlib import reload
 
 import database
-import requests
+import requests  # type: ignore
 from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
+
+from marketface.utils import firstnumbers, numbers, oneline
 
 # TODO
 # from utils import shorten_item_url
@@ -57,66 +59,32 @@ xlinks = f"xpath={xbase}/div[3]/div[1]/div[2]/div//a"
 xlinksall = f"xpath={xbase}/div[3]//a"
 ximg = "xpath=//img"
 
-lowercase = [chr(n) for n in range(ord("a"), ord("a") + 26)] + ["ñ"]  # Spanish letter
-uppercase = [chr(n) for n in range(ord("A"), ord("A") + 26)] + ["Ñ"]
-letters = lowercase + uppercase
-numbers = [str(n) for n in range(10)]
-especial = [
-    " ",
-    "’",
-    "'",
-    '"',
-    ".",
-    ",",
-    ";",
-    "!",
-    "?",
-    "_",
-    "-",
-    "/",
-    "\\",
-    "|",
-    "(",
-    ")",
-    "[",
-    "]",
-    "{",
-    "}",
-]
-alphabet = letters + numbers + especial
-
 sepLine = "-" * 30
 
 
 def clear_wrong():
-    page = 1
-    # query = "priceUsd < 50"
-    query = "deleted = true"
-    items = []
-    while True:
-        new_items = database.get_items_list(page, 100, query).items
-        if not new_items:
-            break
-        items.extend(new_items)
-        page += 1
-    counter = 0
-    for item in items:
-        # if item.title == "":
-        #     continue
-        print(item.url, item.price_usd, item.title)
-        counter += 1
-        # continue # skip update
-        database.update_item_by_url(
-            item.url,
-            {
-                "deleted": False,
-                "description": "",
-                "priceArs": 0,
-                "priceUsd": 0,
-                "title": "",
-            },
+    with database.get_connection() as conn:
+        itemsTable = database.ItemsTable(conn)
+        items = itemsTable.get_items_list_all(
+            start=0,
+            offset=100,
+            query="deleted = true",
         )
-    print("counter ", counter)
+        counter = 0
+        for item in items:
+            print(item.url, item.price_usd, item.title)
+            counter += 1
+            itemsTable.update_item_by_url(
+                item.url,
+                {
+                    "deleted": False,
+                    "description": "",
+                    "priceArs": 0,
+                    "priceUsd": 0,
+                    "title": "",
+                },
+            )
+        print("counter ", counter)
 
 
 def help():
@@ -129,7 +97,7 @@ def help():
     print("1. run `l` this will load facebook's login page")
     print("   login as usual with your user and password")
     print("2. run `s` to open the marketplace and search")
-    print("   by default it searchs for a macbook")
+    print("   by default it searches for a macbook")
     print("3. run `c` to collect the marketplace items")
     print("   from the marketplace search page")
     print("")
@@ -154,16 +122,20 @@ def collect_articles_links(page, xpath):
         yield coll
 
 
-def create_item(href_short, file_name):
+def create_item(
+    itemsTable: database.ItemsTable,
+    href_short: str,
+    file_name: str,
+):
     try:
-        database.get_item_by_url(href_short)
+        itemsTable.get_item_by_url(href_short)
     except ClientResponseError:
         print("record doesn't exist... creating it")
         print("href_short: ", href_short)
-        database.create_item(href_short, file_name)
+        itemsTable.create_item(href_short, file_name)
 
 
-def donwload_image(href_short, img_src):
+def download_image(href_short: str, img_src: str):
     """
     Downloads an image from img_src and saves it to a file
     with the name of the href_short but with "/" replaced
@@ -190,46 +162,6 @@ def if_error_print_and_continue():
         print(type(err), err)
 
 
-def oneline(text):
-    """
-    puts everything in one line and removes unwanted characters
-    like for example emojis
-    """
-    text = text.replace("\n", " ")
-    newText = ""
-    i = 0
-    while i < len(text):
-        c = text[i]
-        if c == " ":
-            newText += " "
-            i += 1
-            while i < len(text):
-                c = text[i]
-                if c == " ":
-                    i += 1
-                else:
-                    break
-            continue
-        if c not in alphabet:
-            i += 1
-            continue
-        newText += c
-        i += 1
-    return newText.strip()
-
-
-def firstnumbers(numberStr):
-    i = 0
-    newNumber = ""
-    while i < len(numberStr):
-        c = numberStr[i]
-        if c not in numbers:
-            break
-        newNumber += c
-        i += 1
-    return newNumber
-
-
 def get_item_page_details(url, page):
     # TODO save into pocketbase
     title = ""
@@ -252,7 +184,7 @@ def get_item_page_details(url, page):
         title = oneline(page.locator(xtitle).text_content())
         priceStr = oneline(page.locator(xprice).text_content())
         description = oneline(page.locator(xdesc).text_content())
-    # if you are in a different location change this rate convertion logic
+    # if you are in a different location change this rate conversion logic
     if priceStr and priceStr.startswith("ARS"):
         # remove first 3 characters from ARS
         # so far nobody use cents but if they do this will fail
@@ -265,9 +197,9 @@ def get_item_page_details(url, page):
         print("Currency must be in ARS!")
         return
     price = price.replace(",", "").replace(".", "")
-    # somethimes the price is followed by a scratched old price
+    # sometimes the price is followed by a scratched old price
     # the text_content puts this text on the same word meaning
-    # it is not separaated by an space in that case only
+    # it is not separated by an space in that case only
     # get the first numbers and ignore everything after that
     # e.g the price may look like this ARS200000ARS230000
     # in this case we want the first price 200000
@@ -310,7 +242,7 @@ def page_of_items(pages=1000):
                 continue
             yield item
         inp = input("Continue? (Y/n): ")
-        if inp != "y" and inp != "":
+        if inp not in ["y", ""]:
             break
         page += 1
 

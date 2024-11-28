@@ -2,6 +2,7 @@
 import argparse
 import time
 from importlib import reload
+
 # this is for quick development cycle as I reload this module
 # dynamically and I update the code to see the changing without
 # reloading the script or browser
@@ -19,9 +20,9 @@ timeout = 3000
 argParser = argparse.ArgumentParser()
 
 # Adding optional argument
-argParser.add_argument("-e", "--Email", help = "email to login")
-argParser.add_argument("-p", "--Password", help = "password to login")
-argParser.add_argument("-s", "--Show", help = "show browser? headless or not?")
+argParser.add_argument("-e", "--Email", help="email to login")
+argParser.add_argument("-p", "--Password", help="password to login")
+argParser.add_argument("-s", "--Show", help="show browser? headless or not?")
 
 
 # Read arguments from command line
@@ -37,11 +38,13 @@ headless = False if args.Show == "True" else True
 if not args.Email or not args.Password:
     raise Exception("need to pass login credentials, email and password")
 
+
 def get_browser_context(p):
     browser = p.chromium.launch(headless=headless, slow_mo=200)
     context = browser.new_context(storage_state="browser_context.json")
     print("New Browser")
     return context
+
 
 def new_page(context):
     page = context.new_page()
@@ -49,6 +52,7 @@ def new_page(context):
     time.sleep(3)
     print("New Page")
     return page
+
 
 def play_repl(context, page):
     # eval may use context and/or page so keep these arguments
@@ -73,6 +77,7 @@ def play_repl(context, page):
 
 links_processed = set()
 
+
 def collect_item_data(link):
     href_full = link.get_attribute("href")
     href_short = play_dynamic.shorten_item_url(href_full)
@@ -80,8 +85,9 @@ def collect_item_data(link):
     img_src = ""
     if len(imgs) > 0:
         img_src = imgs[0].get_attribute("src")
-    file_name = play_dynamic.donwload_image(href_short, img_src)
+    file_name = play_dynamic.download_image(href_short, img_src)
     play_dynamic.create_item(href_short, file_name)
+
 
 def collect_articles(page):
     counter = 0
@@ -94,6 +100,7 @@ def collect_articles(page):
         links_processed.add(href)
         counter += 1
     print("first ", counter)
+
 
 def collect_articles_all(page):
     # collects all articles including the ones
@@ -109,11 +116,13 @@ def collect_articles_all(page):
         counter += 1
     print("all ", counter)
 
+
 def main():
     with sync_playwright() as p:
         context = get_browser_context(p)
         page = new_page(context)
         play_repl(context, page)
+
 
 if __name__ == "__main__":
     main()
