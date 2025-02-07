@@ -1,6 +1,7 @@
-
 import unittest
-from utils import shorten_item_url
+
+from marketface.utils import shorten_item_url
+
 
 class TestShortenItemUrl(unittest.TestCase):
     """Test the function shorten_item_url"""
@@ -27,5 +28,7 @@ class TestShortenItemUrl(unittest.TestCase):
             self.assertEqual(shortened, expected)
 
 
+if __name__ == "__main__":
+    unittest.main()
 if __name__ == "__main__":
     unittest.main()

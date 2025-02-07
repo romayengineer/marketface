@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from importlib import reload
 
 import database
-import requests
+import requests  # mypy: ignore
 from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
 
@@ -129,7 +129,7 @@ def help():
     print("1. run `l` this will load facebook's login page")
     print("   login as usual with your user and password")
     print("2. run `s` to open the marketplace and search")
-    print("   by default it searchs for a macbook")
+    print("   by default it searches for a macbook")
     print("3. run `c` to collect the marketplace items")
     print("   from the marketplace search page")
     print("")
@@ -163,7 +163,7 @@ def create_item(href_short, file_name):
         database.create_item(href_short, file_name)
 
 
-def donwload_image(href_short, img_src):
+def download_image(href_short, img_src):
     """
     Downloads an image from img_src and saves it to a file
     with the name of the href_short but with "/" replaced
@@ -252,7 +252,7 @@ def get_item_page_details(url, page):
         title = oneline(page.locator(xtitle).text_content())
         priceStr = oneline(page.locator(xprice).text_content())
         description = oneline(page.locator(xdesc).text_content())
-    # if you are in a different location change this rate convertion logic
+    # if you are in a different location change this rate conversion logic
     if priceStr and priceStr.startswith("ARS"):
         # remove first 3 characters from ARS
         # so far nobody use cents but if they do this will fail
@@ -265,9 +265,9 @@ def get_item_page_details(url, page):
         print("Currency must be in ARS!")
         return
     price = price.replace(",", "").replace(".", "")
-    # somethimes the price is followed by a scratched old price
+    # sometimes the price is followed by a scratched old price
     # the text_content puts this text on the same word meaning
-    # it is not separaated by an space in that case only
+    # it is not separated by an space in that case only
     # get the first numbers and ignore everything after that
     # e.g the price may look like this ARS200000ARS230000
     # in this case we want the first price 200000
@@ -310,7 +310,7 @@ def page_of_items(pages=1000):
                 continue
             yield item
         inp = input("Continue? (Y/n): ")
-        if inp != "y" and inp != "":
+        if inp not in ["y", ""]:
             break
         page += 1
 

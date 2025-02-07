@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import argparse
+import sys
 import time
+from argparse import ArgumentTypeError
 from importlib import reload
+
 # this is for quick development cycle as I reload this module
 # dynamically and I update the code to see the changing without
 # reloading the script or browser
@@ -19,9 +22,9 @@ timeout = 3000
 argParser = argparse.ArgumentParser()
 
 # Adding optional argument
-argParser.add_argument("-e", "--Email", help = "email to login")
-argParser.add_argument("-p", "--Password", help = "password to login")
-argParser.add_argument("-s", "--Show", help = "show browser? headless or not?")
+argParser.add_argument("-e", "--Email", help="email to login")
+argParser.add_argument("-p", "--Password", help="password to login")
+argParser.add_argument("-s", "--Show", help="show browser? headless or not?")
 
 
 # Read arguments from command line
@@ -29,19 +32,23 @@ args = argParser.parse_args()
 
 
 if args.Show not in ("True", "False"):
-    raise Exception("need to specify if headless or not, valid options True or False")
+    raise ArgumentTypeError(
+        "need to specify if headless or not, valid options True or False"
+    )
 
 
-headless = False if args.Show == "True" else True
+headless = args.Show != "True"
 
 if not args.Email or not args.Password:
-    raise Exception("need to pass login credentials, email and password")
+    raise ArgumentTypeError("need to pass login credentials, email and password")
+
 
 def get_browser_context(p):
     browser = p.chromium.launch(headless=headless, slow_mo=200)
     context = browser.new_context(storage_state="browser_context.json")
     print("New Browser")
     return context
+
 
 def new_page(context):
     page = context.new_page()
@@ -50,38 +57,39 @@ def new_page(context):
     print("New Page")
     return page
 
+
 def play_repl(context, page):
     # eval may use context and/or page so keep these arguments
     # these variables are used dynamically by eval
-    email = args.Email
-    passwd = args.Password
+    email = args.Email  # noqa
+    passwd = args.Password  # noqa
     play_dynamic.help()
     while True:
         try:
             command = input(">>> ").strip()
             if command == "":
                 continue
+            if command == "exit":
+                sys.exit(0)
             reload(play_dynamic)
             # if command is a shortcut translate to code and execute
             command = play_dynamic.shortcuts.get(command, command)
             eval(command)
-        except KeyboardInterrupt as err:
-            print(err)
-        except Exception as err:
+        except (KeyboardInterrupt, Exception) as err:
             print(err)
 
 
 links_processed = set()
 
+
 def collect_item_data(link):
     href_full = link.get_attribute("href")
     href_short = play_dynamic.shorten_item_url(href_full)
     imgs = link.locator(play_dynamic.ximg).all()
-    img_src = ""
-    if len(imgs) > 0:
-        img_src = imgs[0].get_attribute("src")
-    file_name = play_dynamic.donwload_image(href_short, img_src)
+    img_src = imgs[0].get_attribute("src") if len(imgs) > 0 else ""
+    file_name = play_dynamic.download_image(href_short, img_src)
     play_dynamic.create_item(href_short, file_name)
+
 
 def collect_articles(page):
     counter = 0
@@ -94,6 +102,7 @@ def collect_articles(page):
         links_processed.add(href)
         counter += 1
     print("first ", counter)
+
 
 def collect_articles_all(page):
     # collects all articles including the ones
@@ -109,11 +118,13 @@ def collect_articles_all(page):
         counter += 1
     print("all ", counter)
 
+
 def main():
     with sync_playwright() as p:
         context = get_browser_context(p)
         page = new_page(context)
         play_repl(context, page)
+
 
 if __name__ == "__main__":
     main()
