@@ -19,6 +19,8 @@ services:
         image: marketface-postgresql
         hostname: marketface-postgresql
         container_name: marketface-postgresql
+        volumes:
+            - ./data/base:/var/lib/postgresql
         environment:
             POSTGRES_PASSWORD: password
     marketface:
@@ -30,6 +32,7 @@ services:
         container_name: marketface
         volumes:
             - ./marketface:/home/marketface/marketface
+            - ./data/images:/home/marketface/data/images
         entrypoint: tail -F /whatever
 networks:
     marketface_network:

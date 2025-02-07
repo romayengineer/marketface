@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 import argparse
+import sys  # noqa: F401
 import time
 from importlib import reload
+
+from playwright.sync_api import sync_playwright
 
 # this is for quick development cycle as I reload this module
 # dynamically and I update the code to see the changing without
 # reloading the script or browser
-import play_dynamic
-from playwright.sync_api import sync_playwright
+from marketface import play_dynamic
+from marketface.database import ItemsTable, get_connection
 
 # Not used
 field_email = 'xpath=//input[contains(@id, "email")]'
@@ -78,27 +81,30 @@ def play_repl(context, page):
 links_processed = set()
 
 
-def collect_item_data(link):
+def collect_item_data(itemsTable: ItemsTable, link):
     href_full = link.get_attribute("href")
     href_short = play_dynamic.shorten_item_url(href_full)
     imgs = link.locator(play_dynamic.ximg).all()
-    img_src = ""
-    if len(imgs) > 0:
-        img_src = imgs[0].get_attribute("src")
+    img_src = imgs[0].get_attribute("src") if len(imgs) > 0 else ""
     file_name = play_dynamic.download_image(href_short, img_src)
-    play_dynamic.create_item(href_short, file_name)
+    play_dynamic.create_item(itemsTable, href_short, file_name)
 
 
 def collect_articles(page):
     counter = 0
-    for link in play_dynamic.collect_articles_links(page, play_dynamic.xlinks):
-        href = link.get_attribute("href")
-        if href in links_processed:
+    with get_connection() as conn:
+        itemsTable = ItemsTable(conn)
+        for link in play_dynamic.collect_articles_links(
+            page,
+            play_dynamic.xlinks,
+        ):
+            href = link.get_attribute("href")
+            if href in links_processed:
+                counter += 1
+                continue
+            collect_item_data(itemsTable, link)
+            links_processed.add(href)
             counter += 1
-            continue
-        collect_item_data(link)
-        links_processed.add(href)
-        counter += 1
     print("first ", counter)
 
 

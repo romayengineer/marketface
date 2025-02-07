@@ -35,16 +35,13 @@ COPY ./Pipfile ./Pipfile
 # Lock dependencies
 RUN pipenv lock --clear
 
-# Remove virtualenv
-RUN rm -rf /root/.local/share/virtualenvs/marketface-*
-
 # Install dependencies
 RUN pipenv install --system
 
 # Install playwright dependencies
 RUN playwright install-deps
 
+USER marketface
+
 # Install chromium for playwright
 RUN playwright install chromium
-
-USER marketface

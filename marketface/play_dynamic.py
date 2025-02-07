@@ -19,15 +19,18 @@ import time
 from contextlib import contextmanager
 from importlib import reload
 
-import database
 import requests  # type: ignore
 from playwright.sync_api import TimeoutError
-from pocketbase.utils import ClientResponseError
 
-from marketface.utils import firstnumbers, numbers, oneline
+import marketface.database as database
 
 # TODO
-# from utils import shorten_item_url
+from marketface.utils import (
+    firstnumbers,
+    numbers,
+    oneline,
+    shorten_item_url,  # noqa: F401
+)
 
 reload(database)
 
@@ -129,7 +132,7 @@ def create_item(
 ):
     try:
         itemsTable.get_item_by_url(href_short)
-    except ClientResponseError:
+    except Exception:
         print("record doesn't exist... creating it")
         print("href_short: ", href_short)
         itemsTable.create_item(href_short, file_name)

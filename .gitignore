@@ -6,4 +6,5 @@ pb_data
 Pipfile.lock
 .DS_Store
 .ipynb_checkpoints
+marketface/run.sh
 
