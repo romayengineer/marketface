@@ -24,6 +24,8 @@ import requests  # mypy: ignore
 from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
 
+from marketface.utils import get_file_name_from_url
+
 # TODO
 # from utils import shorten_item_url
 
@@ -44,17 +46,11 @@ shortcuts = {
 }
 
 # common xpath that is used in all other xpaths
-xbase = (
-    "/html/body/div[1]/div/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div"
-)
-xdetails = "/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]"
-# these are all the xpath being used in this script
+xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/"
 xbody = "xpath=/html/body"
-xtitle = f"xpath={xbase}{xdetails}/div[1]/h1/span"
-xprice = f"xpath={xbase}{xdetails}/div[1]/div[1]/div/span"
-xdesc = f"xpath={xbase}{xdetails}/div[5]/div/div[2]/div[1]"
-xlinks = f"xpath={xbase}/div[3]/div[1]/div[2]/div//a"
-xlinksall = f"xpath={xbase}/div[3]//a"
+xtitle = f"xpath={xbase}div[1]/h1"
+xprice = f"xpath={xbase}div[1]/div[1]"
+xdesc = f"xpath={xbase}div[5]/div/div[2]/div[1]"
 ximg = "xpath=//img"
 
 lowercase = [chr(n) for n in range(ord("a"), ord("a") + 26)] + ["ñ"]  # Spanish letter
@@ -141,7 +137,7 @@ def div_by_aria_label(page, label):
     return page.locator(f"css=div[aria-label='{label}']")
 
 
-def collect_articles_links(page, xpath):
+def collect_articles_links(page, xpath="//a"):
     # TODO check why am I getting less items that there actually are
     # I am getting a few less like 4 less items it's related to the
     # selector probably
@@ -171,7 +167,8 @@ def download_image(href_short, img_src):
 
     If the file already exists it doesn't download it again
     """
-    file_name = f"data/images/{href_short[1:].replace("/", "_")}.jpg"
+    base_file_name = get_file_name_from_url(href_short)
+    file_name = f"data/images/{base_file_name}.jpg"
     if not os.path.isfile(file_name):
         image_bin = requests.get(img_src).content
         with open(file_name, "wb") as file:
@@ -230,6 +227,27 @@ def firstnumbers(numberStr):
     return newNumber
 
 
+class ItemDetails:
+
+    def __init__(self):
+        self.title = ""
+        self.description = ""
+        self.priceStr = ""
+        self.price = ""  # price without currency
+        self.priceArs = 0  # price in Argentinian Pesos
+        self.priceUsd = 0  # price in Dollars
+        self.isUsd = False
+        self.usdArsRate = 1205.00
+
+
+def get_item_page_source(url: str, page) -> None:
+    file_name = get_file_name_from_url(url)
+    locator = "xpath=/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]"
+    with open(f"data/source/{file_name}.html", "w") as file:
+        inside = page.locator(locator).inner_html()
+        file.write(inside)
+
+
 def get_item_page_details(url, page):
     # TODO save into pocketbase
     title = ""
@@ -241,12 +259,15 @@ def get_item_page_details(url, page):
     isUsd = False
     # TODO update this rate put it somewhere else
     # exchange rate of 2024-08-31
-    usdArsRate = 1350.00
+    usdArsRate = 1205.00
     with if_error_print_and_continue():
-        if (
-            "Esta publicación ya no está disponible"
-            in page.locator(xbody).text_content()
-        ):
+        if "Esta publicación ya no" in page.locator(xbody).text_content():
+            database.update_item_deleted(url)
+            return
+        if "This listing is far" in page.locator(xbody).text_content():
+            database.update_item_deleted(url)
+            return
+        if "This Listing Isn't" in page.locator(xbody).text_content():
             database.update_item_deleted(url)
             return
         title = oneline(page.locator(xtitle).text_content())
@@ -288,6 +309,7 @@ def get_item_page_details(url, page):
     print("description:  ", description)
     print(sepLine)
     body_params = {
+        "deleted": False,
         "description": description,
         "priceArs": priceArs,
         "priceUsd": priceUsd,
@@ -334,7 +356,9 @@ def pull_articles(page, context):
         except TimeoutError as err:
             print("TimeoutError: ", err)
         time.sleep(2)
+        # TODO
         get_item_page_details(item.url, new_page)
+        # get_item_page_source(item.url, new_page)
         new_page.close()
         time.sleep(2)
 
@@ -358,4 +382,5 @@ def search(page):
 
 
 def test(page):
+    login(page)
     login(page)

@@ -1,3 +1,6 @@
+def get_file_name_from_url(href: str) -> str:
+    return href[1:].replace("/", "_")
+
 
 def shorten_item_url(url):
     """

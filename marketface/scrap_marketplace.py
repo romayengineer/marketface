@@ -5,11 +5,13 @@ import time
 from argparse import ArgumentTypeError
 from importlib import reload
 
+from playwright.sync_api import sync_playwright
+
 # this is for quick development cycle as I reload this module
 # dynamically and I update the code to see the changing without
 # reloading the script or browser
-import play_dynamic
-from playwright.sync_api import sync_playwright
+from marketface import play_dynamic
+from marketface.utils import shorten_item_url
 
 # Not used
 field_email = 'xpath=//input[contains(@id, "email")]'
@@ -84,7 +86,7 @@ links_processed = set()
 
 def collect_item_data(link):
     href_full = link.get_attribute("href")
-    href_short = play_dynamic.shorten_item_url(href_full)
+    href_short = shorten_item_url(href_full)
     imgs = link.locator(play_dynamic.ximg).all()
     img_src = imgs[0].get_attribute("src") if len(imgs) > 0 else ""
     file_name = play_dynamic.download_image(href_short, img_src)
@@ -93,7 +95,7 @@ def collect_item_data(link):
 
 def collect_articles(page):
     counter = 0
-    for link in play_dynamic.collect_articles_links(page, play_dynamic.xlinks):
+    for link in play_dynamic.collect_articles_links(page):
         href = link.get_attribute("href")
         if href in links_processed:
             counter += 1
@@ -108,7 +110,7 @@ def collect_articles_all(page):
     # collects all articles including the ones
     # from outside your search
     counter = 0
-    for link in play_dynamic.collect_articles_links(page, play_dynamic.xlinksall):
+    for link in play_dynamic.collect_articles_links(page):
         href = link.get_attribute("href")
         if href in links_processed:
             counter += 1
@@ -127,4 +129,5 @@ def main():
 
 
 if __name__ == "__main__":
+    main()
     main()

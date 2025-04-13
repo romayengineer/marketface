@@ -4,8 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-sqlalchemy = {extras = ["postgresql"], version = "*"}
 anyio = "*"
+beautifulsoup4 = "*"
 certifi = "*"
 charset-normalizer = "*"
 greenlet = "*"
@@ -18,8 +18,9 @@ pocketbase = "0.12.3"
 pyee = "*"
 requests = "*"
 sniffio = "*"
-typing-extensions = "*"
+sqlalchemy = {extras = ["postgresql"], version = "*"}
 types-requests = "*"
+typing-extensions = "*"
 urllib3 = "*"
 
 [dev-packages]
