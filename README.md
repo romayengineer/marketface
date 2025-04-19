@@ -4,6 +4,10 @@ This is a simple project made in python playwright and is for pulling
 facebook marketplace items into a database for analysis like e.g. to
 know if a product has a fair price or if it is cheep
 
+## Prerequisites
+
+Python 3.10.0
+
 ## Plan for the project:
 
 1. [DONE] create database to insert the url and image path
