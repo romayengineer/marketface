@@ -7,6 +7,45 @@ know if a product has a fair price or if it is cheep
 ## Prerequisites
 
 Python 3.10.0
+pocketbase (python package) 0.12.3
+pocketbase (binary) 0.22.34
+
+- pyenv install 3.10.0
+- pyenv global 3.10.0
+- pip install pipenv
+- pipenv install --verbose
+- pipenv shell
+- playwright install chromium
+
+## How to run
+
+python marketface/scrap_marketface.py
+
+then run the database from
+
+cd marketface/data/base
+
+and query the items table with
+
+title != "" && reviewed = false
+
+## Table Items
+
+- url: string
+- title: string
+- description: string
+- img_path: string
+- priceArs: float
+- priceUsd: float
+- usdArsRate: float
+- usd: bool
+- deleted: bool
+- cpu: string
+- memory: int
+- disk: int
+- screen: float
+- yearBought: int
+- yeahModel: int
 
 ## Plan for the project:
 

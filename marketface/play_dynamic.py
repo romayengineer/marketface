@@ -349,7 +349,7 @@ def pull_articles(page, context):
     # TODO remove pages=1 is just for testing and get only one
     for item in page_of_items():
         new_page = context.new_page()
-        new_url = f"https://www.facebook.com{item.url}"
+        new_url = item.url
         print("new_url: ", new_url)
         try:
             new_page.goto(new_url)

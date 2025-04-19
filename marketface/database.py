@@ -14,7 +14,8 @@ try:
     admin_data = client.admins.auth_with_password(
         "romayengineer@gmail.com", "adminadmin!"
     )
-except ClientResponseError:
+except ClientResponseError as e:
+    print(e)
     print("did you run pocketbase serve? from data/base")
     sys.exit(1)
 
@@ -63,7 +64,7 @@ def update_item_deleted(url: str) -> bool:
 def create_item(url, img_path):
     client.collection("items").create(
         {
-            "url": url,
+            "url": "https://www.facebook.com" + url,
             "img_path": img_path,
         }
     )

@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 import argparse
+import os
 import sys
 import time
 from argparse import ArgumentTypeError
 from importlib import reload
 
 from playwright.sync_api import sync_playwright
+
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 # this is for quick development cycle as I reload this module
 # dynamically and I update the code to see the changing without
@@ -129,5 +132,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
     main()
