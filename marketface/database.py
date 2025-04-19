@@ -30,6 +30,16 @@ def get_first_item(query_filter):
 def get_item_by_url(url):
     return get_first_item(f'url = "{url}"')
 
+def get_all(filter=None):
+    page = 1
+    items = []
+    while True:
+        new_items = get_items_list(page, 100).items
+        if not new_items:
+            break
+        items.extend(new_items)
+        page += 1
+    return items
 
 def get_items_list(start, count, filter=None):
     params = {}
