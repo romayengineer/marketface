@@ -150,13 +150,13 @@ def collect_articles_links(page, xpath="//a"):
         yield coll
 
 
-def create_item(href_short, file_name):
+def create_item(href_full, file_name):
     try:
-        database.get_item_by_url(href_short)
+        database.get_item_by_url(href_full)
     except ClientResponseError:
         print("record doesn't exist... creating it")
-        print("href_short: ", href_short)
-        database.create_item(href_short, file_name)
+        print("href_full: ", href_full)
+        database.create_item(href_full, file_name)
 
 
 def download_image(href_short, img_src):

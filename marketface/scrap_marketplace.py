@@ -90,10 +90,11 @@ links_processed = set()
 def collect_item_data(link):
     href_full = link.get_attribute("href")
     href_short = shorten_item_url(href_full)
+    href_full = "https://www.facebook.com" + href_short
     imgs = link.locator(play_dynamic.ximg).all()
     img_src = imgs[0].get_attribute("src") if len(imgs) > 0 else ""
     file_name = play_dynamic.download_image(href_short, img_src)
-    play_dynamic.create_item(href_short, file_name)
+    play_dynamic.create_item(href_full, file_name)
 
 
 def collect_articles(page):
