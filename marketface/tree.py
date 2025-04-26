@@ -11,6 +11,7 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import mean_absolute_error
 from sklearn.base import BaseEstimator
 
+
 def load_data() -> pd.DataFrame:
 
     # Load data from database
@@ -161,6 +162,7 @@ def print_feature_importance(X: pd.DataFrame, model: BaseEstimator) -> None:
 
 
 def main():
+
     data = load_data()
 
     # Define features and target
@@ -169,9 +171,13 @@ def main():
 
     best_model = split_and_train(X, y, n_iter=1000)
 
+    # save best_model into file
+    best_model.save_model('best_xgboost_model.json')
+
     predict_for_new_data(best_model)
 
     print_feature_importance(X, best_model)
+
 
 if __name__ == "__main__":
     main()

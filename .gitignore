@@ -1,9 +1,9 @@
-*.ipynb
-venv
 __pycache__
+.DS_Store
+.ipynb_checkpoints
+*.ipynb
+best_xgboost_model.json
 data
 pb_data
 Pipfile.lock
-.DS_Store
-.ipynb_checkpoints
-
+venv
