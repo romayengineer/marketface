@@ -70,6 +70,7 @@ def load_data() -> pd.DataFrame:
 
     return data
 
+
 def get_best_model(X_train: pd.DataFrame, y_train: pd.DataFrame, n_iter: int = 1000) -> BaseEstimator:
 
     # Define XGBoost model
@@ -114,42 +115,63 @@ def get_best_model(X_train: pd.DataFrame, y_train: pd.DataFrame, n_iter: int = 1
     return best_model
 
 
-data = load_data()
+def split_and_train(X: pd.DataFrame, y: pd.DataFrame, n_iter: int = 1000) -> BaseEstimator:
 
-# Define features and target
-X = data[['model', 'cpu', 'ram', 'disk', 'screen']]
-y = data['price']
+    # Split data into training and test sets
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
 
-# Split data into training and test sets
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33, random_state=42)
+    best_model = get_best_model(X_train, y_train, n_iter=n_iter)
 
-best_model = get_best_model(X_train, y_train, n_iter=1000)
+    # Predict on test set with best model
+    y_pred = best_model.predict(X_test)
 
-# Predict on test set with best model
-y_pred = best_model.predict(X_test)
+    # Evaluate model
+    mae = mean_absolute_error(y_test, y_pred)
+    print(f"Mean Absolute Error on test set: {mae:.2f}")
 
-# Evaluate model
-mae = mean_absolute_error(y_test, y_pred)
-print(f"Mean Absolute Error on test set: {mae:.2f}")
+    return best_model
 
-# Example: Predict for a new sample
-new_data = pd.DataFrame({
-    'model': [pd.NA],
-    'cpu': ['m2'],
-    'ram': [16],
-    'disk': [pd.NA],
-    'screen': [13]
-}).astype({
-    'model': 'category',
-    'cpu': 'category',
-    'ram': 'Int64',
-    'disk': 'Int64',
-    'screen': 'Int64',
-})
-prediction = best_model.predict(new_data)
-print(f"Predicted price for new sample: {prediction[0]:.2f}")
 
-# Feature importance
-feature_importance = best_model.feature_importances_
-for feature, importance in zip(X.columns, feature_importance):
-    print(f"Feature: {feature}, Importance: {importance:.6f}")
+def predict_for_new_data(model: BaseEstimator):
+
+    # Example: Predict for a new sample
+    new_data = pd.DataFrame({
+        'model': [pd.NA],
+        'cpu': ['m2'],
+        'ram': [16],
+        'disk': [pd.NA],
+        'screen': [13]
+    }).astype({
+        'model': 'category',
+        'cpu': 'category',
+        'ram': 'Int64',
+        'disk': 'Int64',
+        'screen': 'Int64',
+    })
+    prediction = model.predict(new_data)
+    print(f"Predicted price for new sample: {prediction[0]:.2f}")
+
+
+def print_feature_importance(X: pd.DataFrame, model: BaseEstimator) -> None:
+
+    # Feature importance
+    feature_importance = model.feature_importances_
+    for feature, importance in zip(X.columns, feature_importance):
+        print(f"Feature: {feature}, Importance: {importance:.6f}")
+
+
+def main():
+    data = load_data()
+
+    # Define features and target
+    X = data[['model', 'cpu', 'ram', 'disk', 'screen']]
+    y = data['price']
+
+    best_model = split_and_train(X, y, n_iter=1000)
+
+    predict_for_new_data(best_model)
+
+    print_feature_importance(X, best_model)
+
+if __name__ == "__main__":
+    main()
