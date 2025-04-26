@@ -161,7 +161,7 @@ def print_feature_importance(X: pd.DataFrame, model: BaseEstimator) -> None:
         print(f"Feature: {feature}, Importance: {importance:.6f}")
 
 
-def main():
+def main(train: bool):
 
     data = load_data()
 
@@ -169,10 +169,18 @@ def main():
     X = data[['model', 'cpu', 'ram', 'disk', 'screen']]
     y = data['price']
 
-    best_model = split_and_train(X, y, n_iter=1000)
+    if train:
 
-    # save best_model into file
-    best_model.save_model('best_xgboost_model.json')
+        best_model = split_and_train(X, y, n_iter=1000)
+
+        # save best_model into file
+        best_model.save_model('best_xgboost_model.json')
+
+    else:
+
+        best_model = xgb.XGBRegressor()
+        best_model.load_model('best_xgboost_model.json')
+
 
     predict_for_new_data(best_model)
 
@@ -180,4 +188,7 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+
+    train = False
+
+    main(train)
