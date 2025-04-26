@@ -111,11 +111,6 @@ def get_best_model(X_train: pd.DataFrame, y_train: pd.DataFrame, n_iter: int = 1
     print("Best parameters:", random_search.best_params_)
     print("Best cross-validation MAE:", -random_search.best_score_)
 
-    # Feature importance
-    feature_importance = best_model.feature_importances_
-    for feature, importance in zip(X.columns, feature_importance):
-        print(f"Feature: {feature}, Importance: {importance:.6f}")
-
     return best_model
 
 
@@ -153,3 +148,8 @@ new_data = pd.DataFrame({
 })
 prediction = best_model.predict(new_data)
 print(f"Predicted price for new sample: {prediction[0]:.2f}")
+
+# Feature importance
+feature_importance = best_model.feature_importances_
+for feature, importance in zip(X.columns, feature_importance):
+    print(f"Feature: {feature}, Importance: {importance:.6f}")
