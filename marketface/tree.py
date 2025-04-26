@@ -123,14 +123,17 @@ def split_and_train(X: pd.DataFrame, y: pd.DataFrame, n_iter: int = 1000) -> Bas
 
     best_model = get_best_model(X_train, y_train, n_iter=n_iter)
 
+    return best_model
+
+
+def get_error(model: BaseEstimator, X_test: pd.DataFrame, y_test: pd.DataFrame) -> None:
+
     # Predict on test set with best model
-    y_pred = best_model.predict(X_test)
+    y_pred = model.predict(X_test)
 
     # Evaluate model
     mae = mean_absolute_error(y_test, y_pred)
     print(f"Mean Absolute Error on test set: {mae:.2f}")
-
-    return best_model
 
 
 def predict_for_new_data(model: BaseEstimator):
@@ -181,6 +184,8 @@ def main(train: bool):
         best_model = xgb.XGBRegressor()
         best_model.load_model('best_xgboost_model.json')
 
+
+    get_error(best_model, X, y)
 
     predict_for_new_data(best_model)
 
