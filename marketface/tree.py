@@ -4,7 +4,9 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 from marketface import database
+from marketface.power import LaptopAttributes, power_set_of_known_attrs
 
+from math import log2
 import pandas as pd
 import numpy as np
 import xgboost as xgb
@@ -56,14 +58,37 @@ def load_records() -> List[BaseModel]:
 def load_data() -> pd.DataFrame:
 
     # Load data from database
+    filtered_records = load_records()
+
+    records_len = len(filtered_records)
+
+    # Create power set of products
+    # as there are 5 attributes this multiplies the records by 32 == 2 ** 5
+    # this gives the model more data to train on for cases were there are missing values
+    # by creating syntetic new products were values that we know are set and the rest ommited
+    power_set_of_products: List[LaptopAttributes] = []
+
+    for record in filtered_records:
+        product = LaptopAttributes(
+            price_usd=record.price_usd,
+            model=record.model,
+            cpu=record.cpu,
+            memory=record.memory,
+            disk=record.disk,
+            screen=record.screen,
+        )
+        power_set_of_products.extend(power_set_of_known_attrs(product))
+
+    powerset_len = len(power_set_of_products)
+
+    # Create DataFrame from power set of products
     model_col = []
     cpu_col = []
     memory_col = []
     disk_col = []
     screen_col = []
     price_col = []
-    filtered_records = load_records()
-    for record in filtered_records:
+    for record in power_set_of_products:
         model_col.append(record.model)
         cpu_col.append(record.cpu)
         memory_col.append(record.memory)
@@ -100,8 +125,14 @@ def load_data() -> pd.DataFrame:
     data['screen'] = data['screen'].astype('float')
     data['price'] = data['price'].astype('float')
 
-    print(data.head(10).to_string(index=False))
-    print("count: ", len(data))
+    print(data.head(50).to_string(index=False))
+
+    print("records len: ", records_len)
+    print("powerset len: ", powerset_len)
+    print("replication factor: ", powerset_len / records_len)
+    print("replication log2: ", log2(powerset_len / records_len))
+
+    # sys.exit(0)
 
     return data
 
@@ -306,7 +337,7 @@ if __name__ == "__main__":
 
     train = False
     split = False
-    n_iter = 1000
+    n_iter = 2000
 
     # main(train, split, n_iter)
     predict_all()
