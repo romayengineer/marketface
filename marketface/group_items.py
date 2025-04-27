@@ -4,8 +4,8 @@ import os
 import sys
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
-from tabulate import tabulate
 from marketface import database
+from tabulate import tabulate
 
 # attributes = ("model", "cpu", "memory", "disk", "screen", "ciclos", "year_bought", "year_model")
 # attributes = ("model", "cpu", "memory", "disk")

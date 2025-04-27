@@ -1,8 +1,10 @@
 import sys
-from typing import Dict
+from typing import Dict, List
 
 from pocketbase import PocketBase
 from pocketbase.utils import ClientResponseError
+from pocketbase.models.utils.list_result import ListResult
+from pocketbase.models.utils.base_model import BaseModel
 
 # TODO use a config file for this
 client = PocketBase("http://127.0.0.1:8090")
@@ -23,14 +25,14 @@ except ClientResponseError as e:
 assert admin_data and admin_data.is_valid, "invalid database credentials"
 
 
-def get_first_item(query_filter):
+def get_first_item(query_filter) -> BaseModel:
     return client.collection("items").get_first_list_item(query_filter)
 
 
-def get_item_by_url(url):
+def get_item_by_url(url) -> BaseModel:
     return get_first_item(f'url = "{url}"')
 
-def get_all(filter=None):
+def get_all() -> List[BaseModel]:
     page = 1
     items = []
     while True:
@@ -41,14 +43,14 @@ def get_all(filter=None):
         page += 1
     return items
 
-def get_items_list(start, count, filter=None):
+def get_items_list(start, count, filter=None) -> ListResult:
     params = {}
     if filter:
         params["filter"] = filter
     return client.collection("items").get_list(start, count, params)
 
 
-def get_items_incomplete(start, count):
+def get_items_incomplete(start, count) -> ListResult:
     """
     returns the list of items missing
     title description price and other details
@@ -61,6 +63,10 @@ def update_item_by_url(url: str, body_params: Dict) -> bool:
     if not record:
         return False
     rid = record.id
+    client.collection("items").update(rid, body_params)
+    return True
+
+def update_item_by_id(rid: str, body_params: Dict) -> bool:
     client.collection("items").update(rid, body_params)
     return True
 
