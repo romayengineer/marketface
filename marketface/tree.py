@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 from marketface import database
 
 import pandas as pd
+import numpy as np
 import xgboost as xgb
 from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import mean_absolute_error
@@ -13,6 +14,12 @@ from sklearn.base import BaseEstimator
 from pocketbase.models.utils.base_model import BaseModel
 from typing import List
 
+
+
+# Define ordinal mappings for categorical features
+# This is to add monotonic constraints
+MODEL_ORDER = {'air': 0, 'pro': 1}  # MacBook Air < MacBook Pro
+CPU_ORDER = {'i3': 0, 'i5': 1, 'i7': 2, 'i9': 3, 'm1': 4, 'm2': 5, 'm3': 6, 'm4': 7}  # i3 < i5 < i7 < i9 < M1 < M2 < M3 < M4
 
 def load_records() -> List[BaseModel]:
 
@@ -64,14 +71,6 @@ def load_data() -> pd.DataFrame:
         screen_col.append(record.screen)
         price_col.append(record.price_usd)
 
-    print("model:  ", model_col[:10])
-    print("cpu:    ", cpu_col[:10])
-    print("memory: ", memory_col[:10])
-    print("disk:   ", disk_col[:10])
-    print("screen: ", screen_col[:10])
-    print("price:  ", price_col[:10])
-    print("count:  ", len(price_col))
-
     # Create the dataset
     data = pd.DataFrame({
         'model': model_col,
@@ -83,19 +82,26 @@ def load_data() -> pd.DataFrame:
     })
 
     # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
-    data['model'] = data['model'].replace('', pd.NA)
-    data['cpu'] = data['cpu'].replace('', pd.NA)
-    data['ram'] = data['ram'].replace(0, pd.NA)
-    data['disk'] = data['disk'].replace(0, pd.NA)
-    data['screen'] = data['screen'].replace(0, pd.NA)
+    data['model'] = data['model'].replace('', np.nan)
+    data['cpu'] = data['cpu'].replace('', np.nan)
+    data['ram'] = data['ram'].replace(0, np.nan)
+    data['disk'] = data['disk'].replace(0, np.nan)
+    data['screen'] = data['screen'].replace(0, np.nan)
+
+    # Apply ordinal encoding for known categories, leaving np.nan as is
+    data['model'] = data['model'].map(MODEL_ORDER)
+    data['cpu'] = data['cpu'].map(CPU_ORDER)
 
     # Convert to appropriate types
-    data['model'] = data['model'].astype('category')
-    data['cpu'] = data['cpu'].astype('category')
-    data['ram'] = data['ram'].astype('Int64')
-    data['disk'] = data['disk'].astype('Int64')
-    data['screen'] = data['screen'].astype('Int64')
+    data['model'] = data['model'].astype('float')
+    data['cpu'] = data['cpu'].astype('float')
+    data['ram'] = data['ram'].astype('float')
+    data['disk'] = data['disk'].astype('float')
+    data['screen'] = data['screen'].astype('float')
     data['price'] = data['price'].astype('float')
+
+    print(data.head(10).to_string(index=False))
+    print("count: ", len(data))
 
     return data
 
@@ -105,8 +111,15 @@ def get_best_model(X_train: pd.DataFrame, y_train: pd.DataFrame, n_iter: int = 1
     # Define XGBoost model
     model = xgb.XGBRegressor(
         objective='reg:squarederror',
-        enable_categorical=True,
-        random_state=42
+        random_state=42,
+        monotone_constraints={
+            'model': 1,
+            'cpu': 1,
+            'ram': 1,
+            'disk': 1,
+            'screen': 1,
+        },
+        missing=np.nan  # Explicitly set missing value handling
     )
 
     # Define hyperparameter search space
@@ -164,23 +177,36 @@ def get_error(model: BaseEstimator, X_test: pd.DataFrame, y_test: pd.DataFrame) 
     print(f"Mean Absolute Error on test set: {mae:.2f}")
 
 
-def predict(model: BaseEstimator, data: BaseModel) -> float:
+def predict(model: BaseEstimator, record: BaseModel) -> float:
 
     # Example: Predict for a new sample
-    new_data = pd.DataFrame({
-        'model': [data.model or pd.NA],
-        'cpu': [data.cpu or pd.NA],
-        'ram': [data.memory or pd.NA],
-        'disk': [data.disk or pd.NA],
-        'screen': [data.screen or pd.NA]
-    }).astype({
-        'model': 'category',
-        'cpu': 'category',
-        'ram': 'Int64',
-        'disk': 'Int64',
-        'screen': 'Int64',
+    data = pd.DataFrame({
+        'model': [record.model],
+        'cpu': [record.cpu],
+        'ram': [record.memory],
+        'disk': [record.disk],
+        'screen': [record.screen]
     })
-    prediction = model.predict(new_data)
+
+    # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
+    data['model'] = data['model'].replace('', np.nan)
+    data['cpu'] = data['cpu'].replace('', np.nan)
+    data['ram'] = data['ram'].replace(0, np.nan)
+    data['disk'] = data['disk'].replace(0, np.nan)
+    data['screen'] = data['screen'].replace(0, np.nan)
+
+    # Apply ordinal encoding for known categories, leaving np.nan as is
+    data['model'] = data['model'].map(MODEL_ORDER)
+    data['cpu'] = data['cpu'].map(CPU_ORDER)
+
+    # Convert to appropriate types
+    data['model'] = data['model'].astype('float')
+    data['cpu'] = data['cpu'].astype('float')
+    data['ram'] = data['ram'].astype('float')
+    data['disk'] = data['disk'].astype('float')
+    data['screen'] = data['screen'].astype('float')
+
+    prediction = model.predict(data)
 
     # get first element as the output is a vector of 1 dimension
     return prediction[0]
@@ -204,20 +230,33 @@ def predict_all():
 def predict_for_new_data(model: BaseEstimator):
 
     # Example: Predict for a new sample
-    new_data = pd.DataFrame({
-        'model': [pd.NA],
+    data = pd.DataFrame({
+        'model': [np.nan],
         'cpu': ['m2'],
         'ram': [16],
-        'disk': [pd.NA],
+        'disk': [np.nan],
         'screen': [13]
-    }).astype({
-        'model': 'category',
-        'cpu': 'category',
-        'ram': 'Int64',
-        'disk': 'Int64',
-        'screen': 'Int64',
     })
-    prediction = model.predict(new_data)
+
+    # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
+    data['model'] = data['model'].replace('', np.nan)
+    data['cpu'] = data['cpu'].replace('', np.nan)
+    data['ram'] = data['ram'].replace(0, np.nan)
+    data['disk'] = data['disk'].replace(0, np.nan)
+    data['screen'] = data['screen'].replace(0, np.nan)
+
+    # Apply ordinal encoding for known categories, leaving np.nan as is
+    data['model'] = data['model'].map(MODEL_ORDER)
+    data['cpu'] = data['cpu'].map(CPU_ORDER)
+
+    # Convert to appropriate types
+    data['model'] = data['model'].astype('float')
+    data['cpu'] = data['cpu'].astype('float')
+    data['ram'] = data['ram'].astype('float')
+    data['disk'] = data['disk'].astype('float')
+    data['screen'] = data['screen'].astype('float')
+
+    prediction = model.predict(data)
     print(f"Predicted price for new sample: {prediction[0]:.2f}")
 
 
@@ -265,9 +304,9 @@ def main(train: bool, split: bool, n_iter: int = 1000):
 
 if __name__ == "__main__":
 
-    train = True
+    train = False
     split = False
-    n_iter = 10000
+    n_iter = 1000
 
-    main(train, split, n_iter)
-    # predict_all()
+    # main(train, split, n_iter)
+    predict_all()
