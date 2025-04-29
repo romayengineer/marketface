@@ -15,6 +15,7 @@ def plot_difference_distribution(plot):
     # the model is train to predict the real price therefore the difference
     # will be close to 0 we want to plot the distribution of the difference
     differences = [x for x in differences if abs(x) > 15]
+    differences = [x for x in differences if abs(x) < 1000]
 
     # Create histogram
     plot.hist(differences, bins=2*100+1, edgecolor='black')
@@ -26,7 +27,7 @@ def plot_difference_distribution(plot):
 
 def plot_price_distribution(plot):
     prices = [record.price_usd for record in database.get_all()]
-    prices = [price for price in prices if 600 < price < 4000]
+    prices = [price for price in prices if 300 < price < 4000]
 
     # Create histogram
     plot.hist(prices, bins=2*10+1, edgecolor='black')

@@ -19,7 +19,7 @@ def power_set_length(n: int) -> int:
 
 class LaptopAttributes:
 
-    attributes = ["model", "cpu", "memory", "disk", "screen"]
+    attributes = ["model", "cpu", "memory", "disk", "screen", "year_bought"]
 
     def __init__(
             self,
@@ -29,6 +29,7 @@ class LaptopAttributes:
             memory: float = 0,
             disk: float = 0,
             screen: float = 0,
+            year_bought: float = 0,
         ):
         self.model = model
         self.cpu = cpu
@@ -36,6 +37,7 @@ class LaptopAttributes:
         self.disk = disk
         self.screen = screen
         self.price_usd = price_usd
+        self.year_bought = year_bought
 
     def print(self):
         attrs = {attr: getattr(self, attr) for attr in LaptopAttributes.attributes}

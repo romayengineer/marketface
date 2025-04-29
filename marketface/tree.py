@@ -20,8 +20,8 @@ from typing import List
 
 # Define ordinal mappings for categorical features
 # This is to add monotonic constraints
-MODEL_ORDER = {'air': 0, 'pro': 1}  # MacBook Air < MacBook Pro
-CPU_ORDER = {'i3': 0, 'i5': 1, 'i7': 2, 'i9': 3, 'm1': 4, 'm2': 5, 'm3': 6, 'm4': 7}  # i3 < i5 < i7 < i9 < M1 < M2 < M3 < M4
+MODEL_ORDER = {'air': 1, 'pro': 2}  # MacBook Air < MacBook Pro
+CPU_ORDER = {'i3': 1, 'i5': 2, 'i7': 3, 'i9': 4, 'm1': 5, 'm2': 6, 'm3': 7, 'm4': 8}  # i3 < i5 < i7 < i9 < M1 < M2 < M3 < M4
 
 def load_records() -> List[BaseModel]:
 
@@ -32,7 +32,7 @@ def load_records() -> List[BaseModel]:
         if record.title == "" or record.reviewed == False:
             continue
         # price must be greater than 600
-        if record.price_usd < 600:
+        if record.price_usd < 300:
             continue
         # price must be lower than 4000
         if record.price_usd > 4000:
@@ -76,6 +76,7 @@ def load_data() -> pd.DataFrame:
             memory=record.memory,
             disk=record.disk,
             screen=record.screen,
+            year_bought=record.year_bought,
         )
         power_set_of_products.extend(power_set_of_known_attrs(product))
 
@@ -87,6 +88,7 @@ def load_data() -> pd.DataFrame:
     memory_col = []
     disk_col = []
     screen_col = []
+    year_bought_col = []
     price_col = []
     for record in power_set_of_products:
         model_col.append(record.model)
@@ -94,6 +96,7 @@ def load_data() -> pd.DataFrame:
         memory_col.append(record.memory)
         disk_col.append(record.disk)
         screen_col.append(record.screen)
+        year_bought_col.append(record.year_bought)
         price_col.append(record.price_usd)
 
     # Create the dataset
@@ -103,6 +106,7 @@ def load_data() -> pd.DataFrame:
         'ram': memory_col,
         'disk': disk_col,
         'screen': screen_col,
+        'year_bought': year_bought_col,
         'price': price_col,
     })
 
@@ -112,6 +116,7 @@ def load_data() -> pd.DataFrame:
     data['ram'] = data['ram'].replace(0, np.nan)
     data['disk'] = data['disk'].replace(0, np.nan)
     data['screen'] = data['screen'].replace(0, np.nan)
+    data['year_bought'] = data['year_bought'].replace(0, np.nan)
 
     # Apply ordinal encoding for known categories, leaving np.nan as is
     data['model'] = data['model'].map(MODEL_ORDER)
@@ -123,6 +128,7 @@ def load_data() -> pd.DataFrame:
     data['ram'] = data['ram'].astype('float')
     data['disk'] = data['disk'].astype('float')
     data['screen'] = data['screen'].astype('float')
+    data['year_bought'] = data['year_bought'].astype('float')
     data['price'] = data['price'].astype('float')
 
     print(data.head(50).to_string(index=False))
@@ -149,6 +155,7 @@ def get_best_model(X_train: pd.DataFrame, y_train: pd.DataFrame, n_iter: int = 1
             'ram': 1,
             'disk': 1,
             'screen': 1,
+            'year_bought': 1,
         },
         missing=np.nan  # Explicitly set missing value handling
     )
@@ -176,7 +183,8 @@ def get_best_model(X_train: pd.DataFrame, y_train: pd.DataFrame, n_iter: int = 1
         cv=5,  # 5-fold cross-validation
         verbose=1,
         random_state=42,
-        n_jobs=-1  # Use all available cores
+        n_jobs=-1,  # Use all available cores
+        error_score="raise",
     )
     random_search.fit(X_train, y_train)
 
@@ -216,7 +224,8 @@ def predict(model: BaseEstimator, record: BaseModel) -> float:
         'cpu': [record.cpu],
         'ram': [record.memory],
         'disk': [record.disk],
-        'screen': [record.screen]
+        'screen': [record.screen],
+        'year_bought': [record.year_bought],
     })
 
     # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
@@ -225,6 +234,7 @@ def predict(model: BaseEstimator, record: BaseModel) -> float:
     data['ram'] = data['ram'].replace(0, np.nan)
     data['disk'] = data['disk'].replace(0, np.nan)
     data['screen'] = data['screen'].replace(0, np.nan)
+    data['year_bought'] = data['year_bought'].replace(0, np.nan)
 
     # Apply ordinal encoding for known categories, leaving np.nan as is
     data['model'] = data['model'].map(MODEL_ORDER)
@@ -236,6 +246,7 @@ def predict(model: BaseEstimator, record: BaseModel) -> float:
     data['ram'] = data['ram'].astype('float')
     data['disk'] = data['disk'].astype('float')
     data['screen'] = data['screen'].astype('float')
+    data['year_bought'] = data['year_bought'].astype('float')
 
     prediction = model.predict(data)
 
@@ -248,8 +259,8 @@ def predict_all():
     best_model = xgb.XGBRegressor()
     best_model.load_model('best_xgboost_model.json')
 
-    filtered_records = load_records()
-    for i, record in enumerate(filtered_records):
+    all_records = database.get_all()
+    for i, record in enumerate(all_records):
         prediction = predict(best_model, record)
         database.update_item_by_id(record.id, {
             "predicted": float(prediction),
@@ -266,7 +277,8 @@ def predict_for_new_data(model: BaseEstimator):
         'cpu': ['m2'],
         'ram': [16],
         'disk': [np.nan],
-        'screen': [13]
+        'screen': [13],
+        'year_bought': [np.nan],
     })
 
     # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
@@ -275,6 +287,7 @@ def predict_for_new_data(model: BaseEstimator):
     data['ram'] = data['ram'].replace(0, np.nan)
     data['disk'] = data['disk'].replace(0, np.nan)
     data['screen'] = data['screen'].replace(0, np.nan)
+    data['year_bought'] = data['screen'].replace(0, np.nan)
 
     # Apply ordinal encoding for known categories, leaving np.nan as is
     data['model'] = data['model'].map(MODEL_ORDER)
@@ -286,6 +299,7 @@ def predict_for_new_data(model: BaseEstimator):
     data['ram'] = data['ram'].astype('float')
     data['disk'] = data['disk'].astype('float')
     data['screen'] = data['screen'].astype('float')
+    data['year_bought'] = data['year_bought'].astype('float')
 
     prediction = model.predict(data)
     print(f"Predicted price for new sample: {prediction[0]:.2f}")
@@ -304,7 +318,7 @@ def main(train: bool, split: bool, n_iter: int = 1000):
     data = load_data()
 
     # Define features and target
-    X = data[['model', 'cpu', 'ram', 'disk', 'screen']]
+    X = data[['model', 'cpu', 'ram', 'disk', 'screen', 'year_bought']]
     y = data['price']
 
     if train:
