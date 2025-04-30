@@ -99,6 +99,23 @@ Feature: disk, Importance: 0.098179
 Feature: screen, Importance: 0.114299
 Feature: year_bought, Importance: 0.139085
 
+============================================================
+
+records len:  483
+powerset len:  23862
+replication factor:  49.40372670807454
+replication log2:  5.626547968690595
+Fitting 5 folds for each of 2000 candidates, totalling 10000 fits
+Best parameters: {'subsample': 1.0, 'reg_lambda': 0.1, 'reg_alpha': 1.0, 'n_estimators': 500, 'min_child_weight': 1, 'max_depth': 8, 'learning_rate': 0.1, 'gamma': 0, 'colsample_bytree': 1.0}
+Best cross-validation MAE: 296.2995853187791
+Mean Absolute Error on test set: 273.74
+Predicted price for new sample: 768.38
+Feature: model, Importance: 0.049784
+Feature: cpu, Importance: 0.206038
+Feature: ram, Importance: 0.303823
+Feature: disk, Importance: 0.095869
+Feature: screen, Importance: 0.104545
+Feature: year_bought, Importance: 0.239941
 
 ## Plan for the project:
 
