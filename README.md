@@ -128,6 +128,30 @@ Feature: disk, Importance: 0.095869
 Feature: screen, Importance: 0.104545
 Feature: year_bought, Importance: 0.239941
 
+============================================================
+
+```
+records len:  507
+powerset len:  25214
+replication factor:  49.73175542406312
+replication log2:  5.636095450960539
+Fitting 5 folds for each of 2000 candidates, totalling 10000 fits
+Best parameters: {'subsample': 1.0, 'reg_lambda': 1.0, 'reg_alpha': 1.0, 'n_estimators': 500, 'min_child_weight': 3, 'max_depth': 8, 'learning_rate': 0.05, 'gamma': 0, 'colsample_bytree': 1.0}
+Best cross-validation MAE: 314.5160953457254
+Mean Absolute Error on test set: 292.81
+Predicted price for new sample: 783.32
+Feature: model, Importance: 0.057885
+Feature: cpu, Importance: 0.186108
+Feature: ram, Importance: 0.330775
+Feature: disk, Importance: 0.101617
+Feature: screen, Importance: 0.110928
+Feature: year_bought, Importance: 0.212686
+
+real    22m19.996s
+user    259m47.935s
+sys     5m17.627s
+```
+
 ## Plan for the project:
 
 1. [DONE] create database to insert the url and image path

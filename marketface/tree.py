@@ -349,9 +349,9 @@ def main(train: bool, split: bool, n_iter: int = 1000):
 
 if __name__ == "__main__":
 
-    train = False
+    train = True
     split = False
     n_iter = 2000
 
-    # main(train, split, n_iter)
-    predict_all()
+    main(train, split, n_iter)
+    # predict_all()

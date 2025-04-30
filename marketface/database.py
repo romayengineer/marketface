@@ -21,12 +21,13 @@ except ClientResponseError as e:
     print("did you run pocketbase serve? from data/base")
     sys.exit(1)
 
+TABLE_NAME = "items"
 
 assert admin_data and admin_data.is_valid, "invalid database credentials"
 
 
 def get_first_item(query_filter) -> BaseModel:
-    return client.collection("items").get_first_list_item(query_filter)
+    return client.collection(TABLE_NAME).get_first_list_item(query_filter)
 
 
 def get_item_by_url(url) -> BaseModel:
@@ -47,7 +48,7 @@ def get_items_list(start, count, filter=None) -> ListResult:
     params = {}
     if filter:
         params["filter"] = filter
-    return client.collection("items").get_list(start, count, params)
+    return client.collection(TABLE_NAME).get_list(start, count, params)
 
 
 def get_items_incomplete(start, count) -> ListResult:
@@ -63,11 +64,11 @@ def update_item_by_url(url: str, body_params: Dict) -> bool:
     if not record:
         return False
     rid = record.id
-    client.collection("items").update(rid, body_params)
+    client.collection(TABLE_NAME).update(rid, body_params)
     return True
 
 def update_item_by_id(rid: str, body_params: Dict) -> bool:
-    client.collection("items").update(rid, body_params)
+    client.collection(TABLE_NAME).update(rid, body_params)
     return True
 
 
@@ -78,7 +79,7 @@ def update_item_deleted(url: str) -> bool:
 
 
 def create_item(href_full, img_path):
-    client.collection("items").create(
+    client.collection(TABLE_NAME).create(
         {
             "url": href_full,
             "img_path": img_path,
