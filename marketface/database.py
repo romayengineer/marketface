@@ -21,9 +21,43 @@ except ClientResponseError as e:
     print("did you run pocketbase serve? from data/base")
     sys.exit(1)
 
-TABLE_NAME = "items"
+TABLE_NAME = "heladeras"
 
 assert admin_data and admin_data.is_valid, "invalid database credentials"
+
+
+def create_table(collection_name: str):
+
+    collection_schema = [
+        {"name": "url", "type": "url", "required": False, "unique": False, "options": {}},
+        {"name": "title", "type": "text", "required": False, "unique": False, "options": {"max": 1000}},
+        {"name": "description", "type": "text", "required": False, "unique": False, "options": {"max": 3000}},
+        {"name": "img_path", "type": "text", "required": False, "unique": False, "options": {}},
+        {"name": "priceUsd", "type": "number", "required": False, "unique": False, "options": {}},
+        {"name": "priceArs", "type": "number", "required": False, "unique": False, "options": {}},
+        {"name": "usdArsRate", "type": "number", "required": False, "unique": False, "options": {}},
+        {"name": "usd", "type": "bool", "required": False, "unique": False, "options": {}},
+        {"name": "deleted", "type": "bool", "required": False, "unique": False, "options": {}},
+        {"name": "reviewed", "type": "bool", "required": False, "unique": False, "options": {}},
+        {"name": "new", "type": "bool", "required": False, "unique": False, "options": {}},
+    ]
+
+    # Data payload for creating the collection
+    collection_data = {
+        "name": collection_name,
+        "type": "base",
+        "schema": collection_schema,
+    }
+
+    try:
+        print(f"\nAttempting to create collection '{collection_name}'...")
+
+        created_collection = client.collections.create(collection_data)
+
+        print(f"Successfully created collection: {created_collection.name} (ID: {created_collection.id})")
+
+    except Exception as e:
+        print(f"An unexpected error occurred during collection creation: {e}")
 
 
 def get_first_item(query_filter) -> BaseModel:
