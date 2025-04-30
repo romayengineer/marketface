@@ -10,6 +10,11 @@ Python 3.10.0
 pocketbase (python package) 0.12.3
 pocketbase (binary) 0.22.34
 
+It can also work with 
+
+pocketbase (python package) 0.15.0
+pocketbase (binary) 0.27.2
+
 - pyenv install 3.10.0
 - pyenv global 3.10.0
 - pip install pipenv
