@@ -51,6 +51,7 @@ title != "" && reviewed = false
 
 ### Trained with 5 attributes
 
+```
 records len:  457
 powerset len:  11029
 replication factor:  24.133479212253828
@@ -65,9 +66,11 @@ Feature: cpu, Importance: 0.320316
 Feature: ram, Importance: 0.357489
 Feature: disk, Importance: 0.130250
 Feature: screen, Importance: 0.138257
+```
 
 ### Trained with 6 attributes (including year bought)
 
+```
 records len:  457
 powerset len:  16796
 replication factor:  36.7527352297593
@@ -80,9 +83,11 @@ Feature: ram, Importance: 0.321874
 Feature: disk, Importance: 0.096231
 Feature: screen, Importance: 0.101094
 Feature: year_bought, Importance: 0.116111
+```
 
 ============================================================
 
+```
 records len:  457
 powerset len:  17382
 replication factor:  38.03501094091904
@@ -98,6 +103,7 @@ Feature: ram, Importance: 0.304731
 Feature: disk, Importance: 0.098179
 Feature: screen, Importance: 0.114299
 Feature: year_bought, Importance: 0.139085
+```
 
 
 ## Plan for the project:
