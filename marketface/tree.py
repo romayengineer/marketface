@@ -31,15 +31,15 @@ def load_records() -> List[BaseModel]:
         # it must be reviewed
         if record.title == "" or record.reviewed == False:
             continue
-        # price must be greater than 600
+        # price must be greater than 300
         if record.price_usd < 300:
             continue
         # price must be lower than 4000
         if record.price_usd > 4000:
             continue
         # it must be not deleted
-        if record.deleted == True:
-            continue
+        # if record.deleted == True:
+        #     continue
         # it must be not broken
         if record.broken == True:
             continue
@@ -49,19 +49,14 @@ def load_records() -> List[BaseModel]:
         # it must be known cpu
         if record.cpu not in ("i3", "i5", "i7", "i9", "m1", "m2", "m3", "m4", ""):
             continue
+        # must be at least one defined
+        if record.model == "" and record.cpu == "":
+            continue
         filtered_records.append(record)
 
     return filtered_records
 
-# def new_dataframe(model, cpu, memory, disk, screen)
-
-def load_data() -> pd.DataFrame:
-
-    # Load data from database
-    filtered_records = load_records()
-
-    records_len = len(filtered_records)
-
+def apply_powerset(filtered_records: List[BaseModel]) -> List[LaptopAttributes]:
     # Create power set of products
     # as there are 5 attributes this multiplies the records by 32 == 2 ** 5
     # this gives the model more data to train on for cases were there are missing values
@@ -80,7 +75,28 @@ def load_data() -> pd.DataFrame:
         )
         power_set_of_products.extend(power_set_of_known_attrs(product))
 
-    powerset_len = len(power_set_of_products)
+    return power_set_of_products
+
+
+def assert_valid(mapping, column) -> None:
+    col_vals = set(filter(lambda c: type(c) == str, column.unique()))
+    map_vals = set(mapping.keys())
+    # print("col_vals: ", col_vals)
+    # print("map_vals: ", map_vals)
+    assert map_vals == col_vals
+
+
+def load_data(with_powerset: bool = True) -> pd.DataFrame:
+
+    # Load data from database
+    filtered_records = load_records()
+
+    records_len = len(filtered_records)
+
+    if with_powerset:
+        filtered_records = apply_powerset(filtered_records)
+
+    powerset_len = len(filtered_records)
 
     # Create DataFrame from power set of products
     model_col = []
@@ -90,7 +106,7 @@ def load_data() -> pd.DataFrame:
     screen_col = []
     year_bought_col = []
     price_col = []
-    for record in power_set_of_products:
+    for record in filtered_records:
         model_col.append(record.model)
         cpu_col.append(record.cpu)
         memory_col.append(record.memory)
@@ -117,6 +133,10 @@ def load_data() -> pd.DataFrame:
     data['disk'] = data['disk'].replace(0, np.nan)
     data['screen'] = data['screen'].replace(0, np.nan)
     data['year_bought'] = data['year_bought'].replace(0, np.nan)
+
+    # assert the model and cpu are known and valid
+    assert_valid(CPU_ORDER, data["cpu"])
+    assert_valid(MODEL_ORDER, data["model"])
 
     # Apply ordinal encoding for known categories, leaving np.nan as is
     data['model'] = data['model'].map(MODEL_ORDER)
