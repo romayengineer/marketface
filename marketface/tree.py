@@ -14,7 +14,7 @@ from sklearn.model_selection import train_test_split, RandomizedSearchCV
 from sklearn.metrics import mean_absolute_error
 from sklearn.base import BaseEstimator
 from pocketbase.models.utils.base_model import BaseModel
-from typing import List
+from typing import List, Dict
 
 
 
@@ -86,6 +86,14 @@ def assert_valid(mapping, column) -> None:
     assert map_vals == col_vals
 
 
+def records_to_pandas(records: List[BaseModel], keys: Dict[str, str]) -> pd.DataFrame:
+    data = {k: [] for k in keys.keys()}
+    for record in records:
+        for k, v in keys.items():
+            data[k].append(getattr(record, v))
+    return pd.DataFrame(data)
+
+
 def load_data(with_powerset: bool = True) -> pd.DataFrame:
 
     # Load data from database
@@ -99,32 +107,16 @@ def load_data(with_powerset: bool = True) -> pd.DataFrame:
     powerset_len = len(filtered_records)
 
     # Create DataFrame from power set of products
-    model_col = []
-    cpu_col = []
-    memory_col = []
-    disk_col = []
-    screen_col = []
-    year_bought_col = []
-    price_col = []
-    for record in filtered_records:
-        model_col.append(record.model)
-        cpu_col.append(record.cpu)
-        memory_col.append(record.memory)
-        disk_col.append(record.disk)
-        screen_col.append(record.screen)
-        year_bought_col.append(record.year_bought)
-        price_col.append(record.price_usd)
-
-    # Create the dataset
-    data = pd.DataFrame({
-        'model': model_col,
-        'cpu': cpu_col,
-        'ram': memory_col,
-        'disk': disk_col,
-        'screen': screen_col,
-        'year_bought': year_bought_col,
-        'price': price_col,
-    })
+    keys = {
+        "model": "model",
+        "cpu": "cpu",
+        "ram": "memory",
+        "disk": "disk",
+        "screen": "screen",
+        "year_bought": "year_bought",
+        "price": "price_usd"
+    }
+    data = records_to_pandas(filtered_records, keys)
 
     # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
     data['model'] = data['model'].replace('', np.nan)
