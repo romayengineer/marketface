@@ -94,29 +94,7 @@ def records_to_pandas(records: List[BaseModel], keys: Dict[str, str]) -> pd.Data
     return pd.DataFrame(data)
 
 
-def load_data(with_powerset: bool = True) -> pd.DataFrame:
-
-    # Load data from database
-    filtered_records = load_records()
-
-    records_len = len(filtered_records)
-
-    if with_powerset:
-        filtered_records = apply_powerset(filtered_records)
-
-    powerset_len = len(filtered_records)
-
-    # Create DataFrame from power set of products
-    keys = {
-        "model": "model",
-        "cpu": "cpu",
-        "ram": "memory",
-        "disk": "disk",
-        "screen": "screen",
-        "year_bought": "year_bought",
-        "price": "price_usd"
-    }
-    data = records_to_pandas(filtered_records, keys)
+def preprocess_values(data: pd.DataFrame) -> None:
 
     # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
     data['model'] = data['model'].replace('', np.nan)
@@ -142,6 +120,33 @@ def load_data(with_powerset: bool = True) -> pd.DataFrame:
     data['screen'] = data['screen'].astype('float')
     data['year_bought'] = data['year_bought'].astype('float')
     data['price'] = data['price'].astype('float')
+
+
+def load_data(with_powerset: bool = True) -> pd.DataFrame:
+
+    # Load data from database
+    filtered_records = load_records()
+
+    records_len = len(filtered_records)
+
+    if with_powerset:
+        filtered_records = apply_powerset(filtered_records)
+
+    powerset_len = len(filtered_records)
+
+    # Create DataFrame from power set of products
+    keys = {
+        "model": "model",
+        "cpu": "cpu",
+        "ram": "memory",
+        "disk": "disk",
+        "screen": "screen",
+        "year_bought": "year_bought",
+        "price": "price_usd"
+    }
+    data = records_to_pandas(filtered_records, keys)
+
+    preprocess_values(data)
 
     print(data.head(50).to_string(index=False))
 
