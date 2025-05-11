@@ -119,7 +119,6 @@ def preprocess_values(data: pd.DataFrame) -> None:
     data['disk'] = data['disk'].astype('float')
     data['screen'] = data['screen'].astype('float')
     data['year_bought'] = data['year_bought'].astype('float')
-    data['price'] = data['price'].astype('float')
 
 
 def load_data(with_powerset: bool = True) -> pd.DataFrame:
@@ -147,6 +146,7 @@ def load_data(with_powerset: bool = True) -> pd.DataFrame:
     data = records_to_pandas(filtered_records, keys)
 
     preprocess_values(data)
+    data['price'] = data['price'].astype('float')
 
     print(data.head(50).to_string(index=False))
 
@@ -245,25 +245,7 @@ def predict(model: BaseEstimator, record: BaseModel) -> float:
         'year_bought': [record.year_bought],
     })
 
-    # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
-    data['model'] = data['model'].replace('', np.nan)
-    data['cpu'] = data['cpu'].replace('', np.nan)
-    data['ram'] = data['ram'].replace(0, np.nan)
-    data['disk'] = data['disk'].replace(0, np.nan)
-    data['screen'] = data['screen'].replace(0, np.nan)
-    data['year_bought'] = data['year_bought'].replace(0, np.nan)
-
-    # Apply ordinal encoding for known categories, leaving np.nan as is
-    data['model'] = data['model'].map(MODEL_ORDER)
-    data['cpu'] = data['cpu'].map(CPU_ORDER)
-
-    # Convert to appropriate types
-    data['model'] = data['model'].astype('float')
-    data['cpu'] = data['cpu'].astype('float')
-    data['ram'] = data['ram'].astype('float')
-    data['disk'] = data['disk'].astype('float')
-    data['screen'] = data['screen'].astype('float')
-    data['year_bought'] = data['year_bought'].astype('float')
+    preprocess_values(data)
 
     prediction = model.predict(data)
 
@@ -298,25 +280,7 @@ def predict_for_new_data(model: BaseEstimator):
         'year_bought': [np.nan],
     })
 
-    # Preprocess: Replace missing values ("" for model/cpu, 0 for ram/disk/screen) with NaN
-    data['model'] = data['model'].replace('', np.nan)
-    data['cpu'] = data['cpu'].replace('', np.nan)
-    data['ram'] = data['ram'].replace(0, np.nan)
-    data['disk'] = data['disk'].replace(0, np.nan)
-    data['screen'] = data['screen'].replace(0, np.nan)
-    data['year_bought'] = data['screen'].replace(0, np.nan)
-
-    # Apply ordinal encoding for known categories, leaving np.nan as is
-    data['model'] = data['model'].map(MODEL_ORDER)
-    data['cpu'] = data['cpu'].map(CPU_ORDER)
-
-    # Convert to appropriate types
-    data['model'] = data['model'].astype('float')
-    data['cpu'] = data['cpu'].astype('float')
-    data['ram'] = data['ram'].astype('float')
-    data['disk'] = data['disk'].astype('float')
-    data['screen'] = data['screen'].astype('float')
-    data['year_bought'] = data['year_bought'].astype('float')
+    preprocess_values(data)
 
     prediction = model.predict(data)
     print(f"Predicted price for new sample: {prediction[0]:.2f}")
