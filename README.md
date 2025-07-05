@@ -22,6 +22,12 @@ pocketbase (binary) 0.27.2
 - pipenv shell
 - playwright install chromium
 
+## Build with Docker
+
+```
+docker build -t marketface -f ./docker/Dockerfile.marketface . --progress=plain
+```
+
 ## How to run
 
 python marketface/scrap_marketface.py
