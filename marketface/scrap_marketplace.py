@@ -51,10 +51,11 @@ password = args.Password or creds.get("password")
 if not email or not password:
     raise ArgumentTypeError("need to pass login credentials, email and password")
 
+storage_state_file="browser_context.json"
 
 def get_browser_context(p):
     browser = p.chromium.launch(headless=headless, slow_mo=200)
-    context = browser.new_context(storage_state="browser_context.json")
+    context = browser.new_context(storage_state=storage_state_file)
     print("New Browser")
     return context
 
@@ -131,8 +132,12 @@ def collect_articles_all(page):
 def main():
     with sync_playwright() as p:
         context = get_browser_context(p)
-        page = new_page(context)
-        play_repl(context, page)
+        try:
+            page = new_page(context)
+            play_repl(context, page)
+        finally:
+            print("saving browser context")
+            context.storage_state(path=storage_state_file)
 
 
 if __name__ == "__main__":

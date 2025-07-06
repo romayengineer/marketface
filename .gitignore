@@ -8,3 +8,4 @@ pb_data
 Pipfile.lock
 venv
 creds.json
+browser_context.json
