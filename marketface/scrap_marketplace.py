@@ -8,13 +8,14 @@ from importlib import reload
 
 from playwright.sync_api import sync_playwright
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+sys.path.insert(0, os.getcwd())
 
 # this is for quick development cycle as I reload this module
 # dynamically and I update the code to see the changing without
 # reloading the script or browser
 from marketface import play_dynamic
 from marketface.utils import shorten_item_url
+from marketface.creds import read_creds
 
 # Not used
 field_email = 'xpath=//input[contains(@id, "email")]'
@@ -29,22 +30,25 @@ argParser = argparse.ArgumentParser()
 # Adding optional argument
 argParser.add_argument("-e", "--Email", help="email to login")
 argParser.add_argument("-p", "--Password", help="password to login")
-argParser.add_argument("-s", "--Show", help="show browser? headless or not?")
+argParser.add_argument(
+    "-s", "--Show",
+    type=bool,
+    default=True,
+    help="show browser? headless or not?"
+)
 
 
 # Read arguments from command line
 args = argParser.parse_args()
 
+headless = not args.Show
 
-if args.Show not in ("True", "False"):
-    raise ArgumentTypeError(
-        "need to specify if headless or not, valid options True or False"
-    )
+creds = read_creds(os.path.join(os.getcwd(), "creds.json"))
 
+email = args.Email or creds.get("email")
+password = args.Password or creds.get("password")
 
-headless = args.Show != "True"
-
-if not args.Email or not args.Password:
+if not email or not password:
     raise ArgumentTypeError("need to pass login credentials, email and password")
 
 
@@ -66,8 +70,7 @@ def new_page(context):
 def play_repl(context, page):
     # eval may use context and/or page so keep these arguments
     # these variables are used dynamically by eval
-    email = args.Email  # noqa
-    passwd = args.Password  # noqa
+    passwd = password  # noqa
     play_dynamic.help()
     while True:
         try:

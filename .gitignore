@@ -7,3 +7,4 @@ data
 pb_data
 Pipfile.lock
 venv
+creds.json
