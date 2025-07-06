@@ -32,8 +32,7 @@ argParser.add_argument("-e", "--Email", help="email to login")
 argParser.add_argument("-p", "--Password", help="password to login")
 argParser.add_argument(
     "-s", "--Show",
-    type=bool,
-    default=True,
+    action="store_true",
     help="show browser? headless or not?"
 )
 
@@ -41,6 +40,7 @@ argParser.add_argument(
 # Read arguments from command line
 args = argParser.parse_args()
 
+print("show: ", args.Show)
 headless = not args.Show
 
 creds = read_creds(os.path.join(os.getcwd(), "creds.json"))

@@ -18,9 +18,10 @@ docker run -it \
     -e DISPLAY=$DISPLAY \
     -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
     -v /run/dbus:/run/dbus:ro \
+    -v ./marketface:/home/marketface/marketface:rw \
+    -v ./data:/home/marketface/data:rw \
     -v ./creds.json:/home/marketface/creds.json:ro \
     -v ./browser_context.json:/home/marketface/browser_context.json:rw \
     --device=/dev/dri \
     --entrypoint /bin/bash \
     marketface
-    # -v ./data:/home/marketface/data:rw \

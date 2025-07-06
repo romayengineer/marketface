@@ -28,6 +28,11 @@ pocketbase (binary) 0.27.2
 docker build -t marketface -f ./docker/Dockerfile.marketface . --progress=plain
 ```
 
+## Create table
+
+play_dynamic.database.create_table("items")
+
+
 ## How to run
 
 python marketface/scrap_marketface.py
