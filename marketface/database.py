@@ -112,7 +112,7 @@ def update_item_deleted(url: str) -> bool:
     return update_item_by_url(url, body_params)
 
 
-def create_item(href_full, img_path):
+def create_item(href_full, img_path=""):
     client.collection(TABLE_NAME).create(
         {
             "url": href_full,

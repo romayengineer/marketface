@@ -150,7 +150,7 @@ def collect_articles_links(page, xpath="//a"):
         yield coll
 
 
-def create_item(href_full, file_name):
+def create_item(href_full, file_name=""):
     try:
         database.get_item_by_url(href_full)
     except ClientResponseError:

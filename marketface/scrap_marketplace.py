@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import os
+import re
 import sys
 import time
 from argparse import ArgumentTypeError
@@ -53,9 +54,55 @@ if not email or not password:
 
 storage_state_file="browser_context.json"
 
+
+def route_rules(context):
+    # --- PERFORMANCE BOOST - THIS IS THE NEW CODE ---
+
+    # Define the types of resources we want to block to speed up loading.
+    # Common resource types: 'image', 'stylesheet', 'font', 'media', 'script'
+    # Be careful blocking 'script' as it can break website functionality.
+    blocked_resource_types = [
+      "image",
+      # whitout the stylesheets the selectors don't work
+      # and we cannot get the data from the site
+      # "stylesheet",
+      "font",
+      "media"
+    ]
+
+    # Define a list of domains to block (e.g., tracking, ads)
+    # This uses regular expressions for flexible matching.
+    blocked_domains = [
+        "googletagmanager\.com",
+        "google-analytics\.com",
+        "doubleclick\.net"
+    ]
+
+    def handle_route(route):
+        # Check if the request's resource type is in our blocked list
+        if route.request.resource_type in blocked_resource_types:
+            # print(f"🚫 Blocking [resource]: {route.request.url}")
+            return route.abort()
+
+        # Check if the request's URL matches any of our blocked domains
+        for domain in blocked_domains:
+            if re.search(domain, route.request.url):
+                # print(f"🚫 Blocking [domain]: {route.request.url}")
+                return route.abort()
+
+        # If the request is not blocked, let it continue
+        return route.continue_()
+
+    # Apply this routing rule to the entire browser context.
+    # The "**" is a glob pattern that matches all URLs.
+    context.route("**/*", handle_route)
+
+    print("🚀 Performance mode enabled: Blocking images, fonts, and stylesheets.")
+
 def get_browser_context(p):
     browser = p.chromium.launch(headless=headless, slow_mo=200)
     context = browser.new_context(storage_state=storage_state_file)
+    route_rules(context)
     print("New Browser")
     return context
 
@@ -97,7 +144,8 @@ def collect_item_data(link):
     href_full = "https://www.facebook.com" + href_short
     imgs = link.locator(play_dynamic.ximg).all()
     img_src = imgs[0].get_attribute("src") if len(imgs) > 0 else ""
-    file_name = play_dynamic.download_image(href_short, img_src)
+    # file_name = play_dynamic.download_image(href_short, img_src)
+    file_name = ""
     play_dynamic.create_item(href_full, file_name)
 
 
