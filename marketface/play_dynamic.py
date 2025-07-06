@@ -356,9 +356,13 @@ def pull_articles(page, context):
         except TimeoutError as err:
             print("TimeoutError: ", err)
         time.sleep(2)
-        # TODO
-        get_item_page_details(item.url, new_page)
-        # get_item_page_source(item.url, new_page)
+        try:
+            # TODO
+            get_item_page_details(item.url, new_page)
+            # get_item_page_source(item.url, new_page)
+        except Exception as err:
+            print(err)
+            database.update_item_deleted(item.url)
         new_page.close()
         time.sleep(2)
 
