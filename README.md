@@ -32,6 +32,10 @@ docker build -t marketface -f ./docker/Dockerfile.marketface . --progress=plain
 
 play_dynamic.database.create_table("items")
 
+## Pocketbase login
+
+- http://127.0.0.1:8090/_/#/login
+
 
 ## How to run
 
