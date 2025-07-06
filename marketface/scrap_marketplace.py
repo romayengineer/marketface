@@ -165,15 +165,21 @@ def collect_articles(page):
 def collect_articles_all(page):
     # collects all articles including the ones
     # from outside your search
+    before = -1
     counter = 0
-    for link in play_dynamic.collect_articles_links(page):
-        href = link.get_attribute("href")
-        if href in links_processed:
+    while before < counter:
+        before=counter
+        for link in play_dynamic.collect_articles_links(page):
+            href = link.get_attribute("href")
+            if href in links_processed:
+                counter += 1
+                continue
+            collect_item_data(link)
+            links_processed.add(href)
             counter += 1
-            continue
-        collect_item_data(link)
-        links_processed.add(href)
-        counter += 1
+
+        page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        time.sleep(3)
     print("all ", counter)
 
 
