@@ -239,7 +239,7 @@ class ItemDetails:
         self.priceArs = 0  # price in Argentinian Pesos
         self.priceUsd = 0  # price in Dollars
         self.isUsd = False
-        self.usdArsRate = 1205.00
+        self.usdArsRate = 1230.00
 
 
 def get_item_page_source(url: str, page) -> None:
@@ -249,26 +249,46 @@ def get_item_page_source(url: str, page) -> None:
         inside = page.locator(locator).inner_html()
         file.write(inside)
 
-def price_str_to_int(priceStr: str) -> Optional[int]:
-    # if you are in a different location change this rate conversion logic
-    if priceStr and priceStr.startswith("ARS"):
-        # remove first 3 characters from ARS
-        # so far nobody use cents but if they do this will fail
-        # conver to float in that case
-        price = priceStr.partition(" ")[0][3:]
-    elif priceStr and priceStr[0] in numbers:
-        price = priceStr.partition(" ")[0]
-    else:
+
+def drop_leading_nondigits(priceStr: str) -> str:
+    while priceStr and not priceStr[0].isdigit():
+        priceStr = priceStr[1:]
+    return priceStr
+
+
+def get_number_saparated(priceStr: str) -> Optional[int]:
+    """
+    if number is for example 123.456123.456
+    is (123.456 + 123.456) there are two numbers
+    we get the first by getting only 3 numbers after
+    separetor either dot or comma
+    """
+    separators = (".", ",",)
+    if not priceStr or not priceStr[0].isdigit():
         return
-    price = price.replace(",", "").replace(".", "")
-    # sometimes the price is followed by a scratched old price
-    # the text_content puts this text on the same word meaning
-    # it is not separated by an space in that case only
-    # get the first numbers and ignore everything after that
-    # e.g the price may look like this ARS200000ARS230000
-    # in this case we want the first price 200000
-    price = int(firstnumbers(price))
+    sep = None
+    number = ""
+    use_sep = False
+    counter = 0
+    for c in priceStr:
+        if c in separators:
+            sep = c
+            use_sep = True
+            counter = 0
+        if counter != 0 and counter % 4 == 0:
+            return int(number)
+        elif c.isdigit():
+            number += c
+        if use_sep:
+            counter += 1
+    return int(number)
+
+
+def price_str_to_int(priceStr: str) -> Optional[int]:
+    newPriceStr = drop_leading_nondigits(priceStr)
+    price = get_number_saparated(newPriceStr)
     return price
+
 
 def get_item_page_details(url, page):
     # TODO save into pocketbase
@@ -280,8 +300,8 @@ def get_item_page_details(url, page):
     priceUsd = 0  # price in Dollars
     isUsd = False
     # TODO update this rate put it somewhere else
-    # exchange rate of 2024-08-31
-    usdArsRate = 1205.00
+    # exchange rate of 2025-07-07
+    usdArsRate = 1230.00
     with if_error_print_and_continue():
         if "Esta publicación ya no" in page.locator(xbody).text_content():
             database.update_item_deleted(url)
@@ -317,10 +337,11 @@ def get_item_page_details(url, page):
     print(sepLine)
     body_params = {
         "deleted": False,
+        "title": title,
         "description": description,
+        "priceStr": priceStr,
         "priceArs": priceArs,
         "priceUsd": priceUsd,
-        "title": title,
         "usd": isUsd,
         "usdArsRate": usdArsRate,
     }

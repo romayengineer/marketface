@@ -268,6 +268,16 @@ def predict_all():
         print(i, record.price_usd, prediction, record.price_usd - prediction)
 
 
+def wipe_titles():
+
+    all_records = database.get_all()
+    for record in all_records:
+        database.update_item_by_id(record.id, {
+            "title": "",
+        })
+        print(record.url)
+
+
 def predict_for_new_data(model: BaseEstimator):
 
     # Example: Predict for a new sample
@@ -336,3 +346,4 @@ if __name__ == "__main__":
 
     main(train, split, n_iter)
     # predict_all()
+    # wipe_titles()
