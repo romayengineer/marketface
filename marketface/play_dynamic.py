@@ -22,7 +22,7 @@ from importlib import reload
 import requests  # mypy: ignore
 from playwright.sync_api import TimeoutError, BrowserContext, Page
 from pocketbase.utils import ClientResponseError
-from typing import Optional
+from typing import Optional, Dict, Any
 
 from marketface import database
 from marketface.utils import get_file_name_from_url
@@ -53,35 +53,6 @@ xtitle = f"xpath={xbase}div[1]/h1"
 xprice = f"xpath={xbase}div[1]/div[1]"
 xdesc = f"xpath={xbase}div[5]/div/div[2]/div[1]"
 ximg = "xpath=//img"
-
-lowercase = [chr(n) for n in range(ord("a"), ord("a") + 26)] + ["ñ"]  # Spanish letter
-uppercase = [chr(n) for n in range(ord("A"), ord("A") + 26)] + ["Ñ"]
-letters = lowercase + uppercase
-numbers = [str(n) for n in range(10)]
-especial = [
-    " ",
-    "’",
-    "'",
-    '"',
-    ".",
-    ",",
-    ";",
-    "!",
-    "?",
-    "_",
-    "-",
-    "/",
-    "\\",
-    "|",
-    "(",
-    ")",
-    "[",
-    "]",
-    "{",
-    "}",
-    "$",
-]
-alphabet = letters + numbers + especial
 
 sepLine = "-" * 30
 
@@ -189,46 +160,6 @@ def if_error_print_and_continue():
         print(type(err), err)
 
 
-def oneline(text):
-    """
-    puts everything in one line and removes unwanted characters
-    like for example emojis
-    """
-    text = text.replace("\n", " ")
-    newText = ""
-    i = 0
-    while i < len(text):
-        c = text[i]
-        if c == " ":
-            newText += " "
-            i += 1
-            while i < len(text):
-                c = text[i]
-                if c == " ":
-                    i += 1
-                else:
-                    break
-            continue
-        if c not in alphabet:
-            i += 1
-            continue
-        newText += c
-        i += 1
-    return newText.strip()
-
-
-def firstnumbers(numberStr):
-    i = 0
-    newNumber = ""
-    while i < len(numberStr):
-        c = numberStr[i]
-        if c not in numbers:
-            break
-        newNumber += c
-        i += 1
-    return newNumber
-
-
 class ItemDetails:
 
     def __init__(self):
@@ -236,10 +167,28 @@ class ItemDetails:
         self.description = ""
         self.priceStr = ""
         self.price = ""  # price without currency
-        self.priceArs = 0  # price in Argentinian Pesos
-        self.priceUsd = 0  # price in Dollars
-        self.isUsd = False
+        self.priceArs = 0.0  # price in Argentinian Pesos
+        self.priceUsd = 0.0  # price in Dollars
         self.usdArsRate = 1230.00
+        self.isUsd = False
+        self.deleted = False
+
+    def print(self):
+        for k, v in self.to_dict().items():
+            print(f"{k.ljust(20)}: {v}\n")
+        print(sepLine)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "deleted": self.deleted,
+            "title": self.title,
+            "description": self.description,
+            "priceStr": self.priceStr,
+            "priceArs": self.priceArs,
+            "priceUsd": self.priceUsd,
+            "usd": self.isUsd,
+            "usdArsRate": self.usdArsRate,
+        }
 
 
 def get_item_page_source(url: str, page) -> None:
@@ -291,17 +240,8 @@ def price_str_to_int(priceStr: str) -> Optional[int]:
 
 
 def get_item_page_details(url, page: Page):
-    # TODO save into pocketbase
-    title = ""
-    description = ""
-    priceStr = ""
-    price = ""  # price without currency
-    priceArs = 0  # price in Argentinian Pesos
-    priceUsd = 0  # price in Dollars
-    isUsd = False
-    # TODO update this rate put it somewhere else
-    # exchange rate of 2025-07-07
-    usdArsRate = 1230.00
+    item = ItemDetails()
+    priceStr = "" # for use before assigment
     with if_error_print_and_continue():
         body = str(page.locator(xbody).text_content())
         invalid_strs = [
@@ -314,10 +254,6 @@ def get_item_page_details(url, page: Page):
                 print("product is far or not available")
                 database.update_item_deleted(url)
                 return
-        # disable oneline for now
-        # title = oneline(page.locator(xtitle).text_content())
-        # description = oneline(page.locator(xdesc).text_content())
-        # priceStr = oneline(page.locator(xprice).text_content())
         title = page.locator(xtitle).text_content()
         priceStr = page.locator(xprice).text_content()
         description = page.locator(xdesc).text_content()
@@ -330,32 +266,19 @@ def get_item_page_details(url, page: Page):
         print(f"invalid price {priceStr}")
         database.update_item_deleted(url)
         return
+    item.title = title
+    item.priceStr = priceStr
+    item.description = description or ""
     if price < 10000:
-        priceUsd = price
-        priceArs = round(price * usdArsRate, 2)
-        isUsd = True
+        item.priceUsd = price
+        item.priceArs = round(price * item.usdArsRate, 2)
+        item.isUsd = True
     else:
-        priceUsd = round(price / usdArsRate, 2)
-        priceArs = price
-        isUsd = False
-    print("title:        ", title)
-    print("price:        ", priceStr)
-    print("priceUsd:     ", priceUsd)
-    print("priceArs:     ", priceArs)
-    print("isUsd:        ", isUsd)
-    print("description:  ", description)
-    print(sepLine)
-    body_params = {
-        "deleted": False,
-        "title": title,
-        "description": description,
-        "priceStr": priceStr,
-        "priceArs": priceArs,
-        "priceUsd": priceUsd,
-        "usd": isUsd,
-        "usdArsRate": usdArsRate,
-    }
-    database.update_item_by_url(url, body_params)
+        item.priceUsd = round(price / item.usdArsRate, 2)
+        item.priceArs = price
+        item.isUsd = False
+    item.print()
+    database.update_item_by_url(url, item.to_dict())
 
 
 def page_of_items(pages=1000):
