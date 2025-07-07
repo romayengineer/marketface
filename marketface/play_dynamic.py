@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from importlib import reload
 
 import requests  # mypy: ignore
-from playwright.sync_api import TimeoutError
+from playwright.sync_api import TimeoutError, BrowserContext, Page
 from pocketbase.utils import ClientResponseError
 from typing import Optional
 
@@ -290,7 +290,7 @@ def price_str_to_int(priceStr: str) -> Optional[int]:
     return price
 
 
-def get_item_page_details(url, page):
+def get_item_page_details(url, page: Page):
     # TODO save into pocketbase
     title = ""
     description = ""
@@ -303,15 +303,16 @@ def get_item_page_details(url, page):
     # exchange rate of 2025-07-07
     usdArsRate = 1230.00
     with if_error_print_and_continue():
-        if "Esta publicación ya no" in page.locator(xbody).text_content():
-            database.update_item_deleted(url)
-            return
-        if "This listing is far" in page.locator(xbody).text_content():
-            database.update_item_deleted(url)
-            return
-        if "This Listing Isn't" in page.locator(xbody).text_content():
-            database.update_item_deleted(url)
-            return
+        body = str(page.locator(xbody).text_content())
+        invalid_strs = [
+            "Esta publicación ya no",
+            "This listing is far",
+            "This Listing Isn't",
+        ]
+        for invalid_str in invalid_strs:
+            if invalid_str in body:
+                database.update_item_deleted(url)
+                return
         title = oneline(page.locator(xtitle).text_content())
         priceStr = oneline(page.locator(xprice).text_content())
         description = oneline(page.locator(xdesc).text_content())
@@ -365,7 +366,7 @@ def page_of_items(pages=1000):
         page += 1
 
 
-def pull_articles(page, context):
+def pull_articles(page: Page, context: BrowserContext) -> None:
     """
     similar to collect_articles but this function
     open each of the urls stored in the database and

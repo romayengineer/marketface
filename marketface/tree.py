@@ -268,14 +268,16 @@ def predict_all():
         print(i, record.price_usd, prediction, record.price_usd - prediction)
 
 
-def wipe_titles():
+def wipe_column(column_name: str) -> None:
 
     all_records = database.get_all()
     for record in all_records:
+        if not getattr(record, column_name):
+            continue
         database.update_item_by_id(record.id, {
-            "title": "",
+            column_name: "",
         })
-        print(record.url)
+        print(f"wipe column {column_name} for {record.url}")
 
 
 def predict_for_new_data(model: BaseEstimator):
@@ -346,4 +348,4 @@ if __name__ == "__main__":
 
     main(train, split, n_iter)
     # predict_all()
-    # wipe_titles()
+    # wipe_column("img_path")

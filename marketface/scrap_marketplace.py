@@ -8,6 +8,7 @@ from argparse import ArgumentTypeError
 from importlib import reload
 
 from playwright.sync_api import sync_playwright
+from playwright.sync_api import Browser, BrowserContext, Page, Playwright
 
 sys.path.insert(0, os.getcwd())
 
@@ -99,23 +100,23 @@ def route_rules(context):
 
     print("🚀 Performance mode enabled: Blocking images, fonts, and stylesheets.")
 
-def get_browser_context(p):
-    browser = p.chromium.launch(headless=headless, slow_mo=200)
-    context = browser.new_context(storage_state=storage_state_file)
+def get_browser_context(p: Playwright) -> BrowserContext:
+    browser: Browser = p.chromium.launch(headless=headless, slow_mo=200)
+    context: BrowserContext = browser.new_context(storage_state=storage_state_file)
     route_rules(context)
     print("New Browser")
     return context
 
 
-def new_page(context):
-    page = context.new_page()
+def new_page(context: BrowserContext) -> Page:
+    page: Page = context.new_page()
     page.set_default_timeout(timeout)
     time.sleep(3)
     print("New Page")
     return page
 
 
-def play_repl(context, page):
+def play_repl(context: BrowserContext, page: Page) -> None:
     # eval may use context and/or page so keep these arguments
     # these variables are used dynamically by eval
     passwd = password  # noqa
