@@ -19,12 +19,12 @@ import time
 from contextlib import contextmanager
 from importlib import reload
 
-import database
 import requests  # mypy: ignore
 from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
 from typing import Optional
 
+from marketface import database
 from marketface.utils import get_file_name_from_url
 
 # TODO
