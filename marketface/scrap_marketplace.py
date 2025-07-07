@@ -168,14 +168,17 @@ def collect_articles_all(page):
     # from outside your search
     before = -1
     counter = 0
-    while before < counter:
+    tries = 0
+    while before < counter or tries < 5:
+        if before >= counter:
+            tries += 1
+        else:
+            tries = 0
         before=counter
         try:
             for link in play_dynamic.collect_articles_links(page):
                 href = link.get_attribute("href")
                 if href in links_processed:
-                    counter += 1
-                    # print(f"href already processed: {href}")
                     continue
                 collect_item_data(link)
                 links_processed.add(href)
@@ -184,7 +187,7 @@ def collect_articles_all(page):
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
         except Exception as err:
             print(err)
-        time.sleep(2)
+        time.sleep(3)
     print("all ", counter)
 
 

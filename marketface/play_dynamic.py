@@ -46,13 +46,14 @@ shortcuts = {
     "exit": "sys.exit(0)",
 }
 
-# common xpath that is used in all other xpaths
-xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]/"
 xbody = "xpath=/html/body"
-xtitle = f"xpath={xbase}div[1]/h1"
-xprice = f"xpath={xbase}div[1]/div[1]"
-xdesc = f"xpath={xbase}div[5]/div/div[2]/div[1]"
 ximg = "xpath=//img"
+
+# common xpath that is used in all other xpaths
+xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]/div[1]"
+xtitle = f"xpath={xbase}/div[1]/h1"
+xprice = f"xpath={xbase}/div[1]/div[1]"
+xdesc = f"xpath={xbase}/div[5]/div/div[2]/div[1]"
 
 sepLine = "-" * 30
 
