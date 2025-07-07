@@ -16,6 +16,7 @@ xhost +local:
 
 docker run -it \
     -e DISPLAY=$DISPLAY \
+    -p 8090:8090 \
     -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
     -v /run/dbus:/run/dbus:ro \
     -v ./marketface:/home/marketface/marketface:rw \

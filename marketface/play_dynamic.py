@@ -23,6 +23,7 @@ import database
 import requests  # mypy: ignore
 from playwright.sync_api import TimeoutError
 from pocketbase.utils import ClientResponseError
+from typing import Optional
 
 from marketface.utils import get_file_name_from_url
 
@@ -78,6 +79,7 @@ especial = [
     "]",
     "{",
     "}",
+    "$",
 ]
 alphabet = letters + numbers + especial
 
@@ -247,6 +249,25 @@ def get_item_page_source(url: str, page) -> None:
         inside = page.locator(locator).inner_html()
         file.write(inside)
 
+def price_str_to_int(priceStr: str) -> Optional[int]:
+    # if you are in a different location change this rate conversion logic
+    if priceStr and priceStr.startswith("ARS"):
+        # remove first 3 characters from ARS
+        # so far nobody use cents but if they do this will fail
+        # conver to float in that case
+        price = priceStr.partition(" ")[0][3:]
+    elif priceStr and priceStr[0] in numbers:
+        price = priceStr.partition(" ")[0]
+    else:
+        return
+    price = price.replace(",", "").replace(".", "")
+    # sometimes the price is followed by a scratched old price
+    # the text_content puts this text on the same word meaning
+    # it is not separated by an space in that case only
+    # get the first numbers and ignore everything after that
+    # e.g the price may look like this ARS200000ARS230000
+    # in this case we want the first price 200000
+    price = int(firstnumbers(price))
 
 def get_item_page_details(url, page):
     # TODO save into pocketbase
@@ -273,26 +294,11 @@ def get_item_page_details(url, page):
         title = oneline(page.locator(xtitle).text_content())
         priceStr = oneline(page.locator(xprice).text_content())
         description = oneline(page.locator(xdesc).text_content())
-    # if you are in a different location change this rate conversion logic
-    if priceStr and priceStr.startswith("ARS"):
-        # remove first 3 characters from ARS
-        # so far nobody use cents but if they do this will fail
-        # conver to float in that case
-        price = priceStr.partition(" ")[0][3:]
-    elif priceStr and priceStr[0] in numbers:
-        price = priceStr.partition(" ")[0]
-    else:
+    price = price_str_to_int(priceStr)
+    if not price:
         database.update_item_deleted(url)
-        print("Currency must be in ARS!")
+        print(f"invalid price {priceStr}")
         return
-    price = price.replace(",", "").replace(".", "")
-    # sometimes the price is followed by a scratched old price
-    # the text_content puts this text on the same word meaning
-    # it is not separated by an space in that case only
-    # get the first numbers and ignore everything after that
-    # e.g the price may look like this ARS200000ARS230000
-    # in this case we want the first price 200000
-    price = int(firstnumbers(price))
     if price < 10000:
         priceUsd = price
         priceArs = round(price * usdArsRate, 2)
@@ -381,7 +387,10 @@ def login(page, email: str, passwd: str) -> bool:
 
 def search(page):
     page.goto(
-        "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook&exact=false"
+        # MacBook
+        # "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook&exact=false",
+        # MacBook 16
+        "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook%2016&exact=false",
     )
 
 
