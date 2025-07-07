@@ -348,4 +348,4 @@ if __name__ == "__main__":
 
     main(train, split, n_iter)
     # predict_all()
-    # wipe_column("img_path")
+    # wipe_column("title")

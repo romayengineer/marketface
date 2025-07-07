@@ -311,15 +311,24 @@ def get_item_page_details(url, page: Page):
         ]
         for invalid_str in invalid_strs:
             if invalid_str in body:
+                print("product is far or not available")
                 database.update_item_deleted(url)
                 return
-        title = oneline(page.locator(xtitle).text_content())
-        priceStr = oneline(page.locator(xprice).text_content())
-        description = oneline(page.locator(xdesc).text_content())
+        # disable oneline for now
+        # title = oneline(page.locator(xtitle).text_content())
+        # description = oneline(page.locator(xdesc).text_content())
+        # priceStr = oneline(page.locator(xprice).text_content())
+        title = page.locator(xtitle).text_content()
+        priceStr = page.locator(xprice).text_content()
+        description = page.locator(xdesc).text_content()
+        if not title or not priceStr:
+            print(f"title and price are required: title '{title}' price '{priceStr}'")
+            database.update_item_deleted(url)
+            return
     price = price_str_to_int(priceStr)
     if not price:
-        database.update_item_deleted(url)
         print(f"invalid price {priceStr}")
+        database.update_item_deleted(url)
         return
     if price < 10000:
         priceUsd = price
@@ -379,7 +388,7 @@ def pull_articles(page: Page, context: BrowserContext) -> None:
     for item in page_of_items():
         new_page = context.new_page()
         new_url = item.url
-        print("new_url: ", new_url)
+        print("new_url:      ", new_url)
         try:
             new_page.goto(new_url)
         except TimeoutError as err:
