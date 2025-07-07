@@ -392,7 +392,8 @@ def pull_articles(page: Page, context: BrowserContext) -> None:
         try:
             new_page.goto(new_url)
         except TimeoutError as err:
-            print("TimeoutError: ", err)
+            print("TimeoutError continue: ", err)
+            continue
         time.sleep(2)
         try:
             # TODO
