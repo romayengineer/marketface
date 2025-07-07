@@ -268,6 +268,7 @@ def price_str_to_int(priceStr: str) -> Optional[int]:
     # e.g the price may look like this ARS200000ARS230000
     # in this case we want the first price 200000
     price = int(firstnumbers(price))
+    return price
 
 def get_item_page_details(url, page):
     # TODO save into pocketbase
