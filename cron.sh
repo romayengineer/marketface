@@ -10,6 +10,8 @@ SHLVL=1
 PATH=/usr/local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 _=/usr/bin/env
 
+# log env to know display and other envs are set up ok
 /usr/bin/env |& tee -a /home/marketface/marketface.log
 
-/usr/local/bin/python /home/marketface/marketface |& tee -a /home/marketface/marketface.log
+# run script with flock to create a lock file and run once at the time
+flock -n /var/lock/marketface.lock -c "/usr/local/bin/python /home/marketface/marketface" |& tee -a /home/marketface/marketface.log

@@ -343,12 +343,9 @@ def login(page: Page, email: str, password: str) -> bool:
         return False
 
 
-def search(page: Page) -> None:
+def search(page: Page, url: Optional[str] = None) -> None:
+    if not url:
+        url = "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook%2032&exact=false"
     page.goto(
-        # MacBook
-        # "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook&exact=false",
-        # MacBook 16
-        # "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook%2016&exact=false",
-        # MacBook 32
-        "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook%2032&exact=false",
+        url,
     )
