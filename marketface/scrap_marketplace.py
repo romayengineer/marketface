@@ -8,7 +8,7 @@ from argparse import ArgumentTypeError
 from importlib import reload
 
 from playwright.sync_api import sync_playwright
-from playwright.sync_api import Browser, BrowserContext, Page, Playwright
+from playwright.sync_api import Browser, BrowserContext, Page, Playwright, Route, Locator
 
 sys.path.insert(0, os.getcwd())
 
@@ -19,12 +19,10 @@ from marketface import play_dynamic
 from marketface.utils import shorten_item_url
 from marketface.creds import read_creds
 
-# Not used
-field_email = 'xpath=//input[contains(@id, "email")]'
-field_pass = 'xpath=//input[contains(@id, "pass")]'
-button_login = 'xpath=//button[text()="Some text"]'
 
 timeout = 3000
+
+links_processed = set()
 
 # Initialize parser
 argParser = argparse.ArgumentParser()
@@ -37,7 +35,6 @@ argParser.add_argument(
     action="store_true",
     help="show browser? headless or not?"
 )
-
 
 # Read arguments from command line
 args = argParser.parse_args()
@@ -53,10 +50,11 @@ password = args.Password or creds.get("password")
 if not email or not password:
     raise ArgumentTypeError("need to pass login credentials, email and password")
 
+
 storage_state_file="browser_context.json"
 
 
-def route_rules(context):
+def route_rules(context: BrowserContext) -> None:
     # --- PERFORMANCE BOOST - THIS IS THE NEW CODE ---
 
     # Define the types of resources we want to block to speed up loading.
@@ -74,12 +72,12 @@ def route_rules(context):
     # Define a list of domains to block (e.g., tracking, ads)
     # This uses regular expressions for flexible matching.
     blocked_domains = [
-        "googletagmanager\.com",
-        "google-analytics\.com",
-        "doubleclick\.net"
+        r"googletagmanager\.com",
+        r"google-analytics\.com",
+        r"doubleclick\.net"
     ]
 
-    def handle_route(route):
+    def handle_route(route: Route):
         # Check if the request's resource type is in our blocked list
         if route.request.resource_type in blocked_resource_types:
             # print(f"🚫 Blocking [resource]: {route.request.url}")
@@ -100,6 +98,7 @@ def route_rules(context):
 
     print("🚀 Performance mode enabled: Blocking images, fonts, and stylesheets.")
 
+
 def get_browser_context(p: Playwright) -> BrowserContext:
     browser: Browser = p.chromium.launch(headless=headless, slow_mo=200)
     context: BrowserContext = browser.new_context(storage_state=storage_state_file)
@@ -119,7 +118,6 @@ def new_page(context: BrowserContext) -> Page:
 def play_repl(context: BrowserContext, page: Page) -> None:
     # eval may use context and/or page so keep these arguments
     # these variables are used dynamically by eval
-    passwd = password  # noqa
     play_dynamic.help()
     while True:
         try:
@@ -136,11 +134,8 @@ def play_repl(context: BrowserContext, page: Page) -> None:
             print(err)
 
 
-links_processed = set()
-
-
-def collect_item_data(link):
-    href_full = link.get_attribute("href")
+def collect_item_data(link: Locator) -> None:
+    href_full = link.get_attribute("href") or ""
     href_short = shorten_item_url(href_full)
     href_full = "https://www.facebook.com" + href_short
     imgs = link.locator(play_dynamic.ximg).all()
@@ -150,10 +145,10 @@ def collect_item_data(link):
     play_dynamic.create_item(href_full, file_name)
 
 
-def collect_articles(page):
+def collect_articles(page: Page) -> None:
     counter = 0
     for link in play_dynamic.collect_articles_links(page):
-        href = link.get_attribute("href")
+        href = link.get_attribute("href") or ""
         if href in links_processed:
             counter += 1
             continue
@@ -163,7 +158,7 @@ def collect_articles(page):
     print("first ", counter)
 
 
-def collect_articles_all(page):
+def collect_articles_all(page: Page) -> None:
     # collects all articles including the ones
     # from outside your search
     before = -1
@@ -191,7 +186,7 @@ def collect_articles_all(page):
     print("all ", counter)
 
 
-def main():
+def main() -> None:
     with sync_playwright() as p:
         context = get_browser_context(p)
         try:

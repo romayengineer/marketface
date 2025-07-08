@@ -20,9 +20,9 @@ from contextlib import contextmanager
 from importlib import reload
 
 import requests  # mypy: ignore
-from playwright.sync_api import TimeoutError, BrowserContext, Page
+from playwright.sync_api import TimeoutError, BrowserContext, Page, Locator
 from pocketbase.utils import ClientResponseError
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Iterator
 
 from marketface import database
 from marketface.utils import get_file_name_from_url
@@ -37,7 +37,7 @@ shortcuts = {
     "s": "play_dynamic.search(page)",
     # shortcut for quick testing a new function
     "t": "play_dynamic.test(page)",
-    "l": "play_dynamic.login(page, email, passwd)",
+    "l": "play_dynamic.login(page, email, password)",
     "c": "collect_articles(page)",
     "v": "collect_articles_all(page)",
     "p": "play_dynamic.pull_articles(page, context)",
@@ -58,7 +58,7 @@ xdesc = f"xpath={xbase}/div[5]/div/div[2]/div[1]"
 sepLine = "-" * 30
 
 
-def clear_wrong():
+def clear_wrong() -> None:
     page = 1
     # query = "priceUsd < 50"
     query = "deleted = true"
@@ -89,7 +89,7 @@ def clear_wrong():
     print("counter ", counter)
 
 
-def help():
+def help() -> None:
     """
     Prints the getting started tutorial for the
     interactive shell
@@ -107,24 +107,24 @@ def help():
         print(shortcut, " --> ", command)
 
 
-def div_by_aria_label(page, label):
+def div_by_aria_label(page: Page, label: str) -> Locator:
     return page.locator(f"css=div[aria-label='{label}']")
 
 
-def collect_articles_links(page, xpath="//a"):
+def collect_articles_links(page: Page, xpath: str = "//a") -> Iterator[Locator]:
     # TODO check why am I getting less items that there actually are
     # I am getting a few less like 4 less items it's related to the
     # selector probably
     # print("collect articles links")
     collections = page.locator(xpath).all()
     for coll in collections:
-        href = coll.get_attribute("href")
+        href = coll.get_attribute("href") or ""
         if not href.startswith("/marketplace/item/"):
             continue
         yield coll
 
 
-def create_item(href_full, file_name=""):
+def create_item(href_full: str, file_name: str = "") -> None:
     try:
         database.get_item_by_url(href_full)
     except ClientResponseError:
@@ -133,7 +133,7 @@ def create_item(href_full, file_name=""):
         database.create_item(href_full, file_name)
 
 
-def download_image(href_short, img_src):
+def download_image(href_short: str, img_src: str) -> str:
     """
     Downloads an image from img_src and saves it to a file
     with the name of the href_short but with "/" replaced
@@ -174,7 +174,7 @@ class ItemDetails:
         self.isUsd = False
         self.deleted = False
 
-    def print(self):
+    def print(self) -> None:
         for k, v in self.to_dict().items():
             print(f"{k.ljust(20)}: {v}\n")
         print(sepLine)
@@ -192,7 +192,7 @@ class ItemDetails:
         }
 
 
-def get_item_page_source(url: str, page) -> None:
+def get_item_page_source(url: str, page: Page) -> None:
     file_name = get_file_name_from_url(url)
     locator = "xpath=/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]"
     with open(f"data/source/{file_name}.html", "w") as file:
@@ -240,7 +240,7 @@ def price_str_to_int(priceStr: str) -> Optional[int]:
     return price
 
 
-def get_item_page_details(url, page: Page):
+def get_item_page_details(url: str, page: Page) -> bool:
     item = ItemDetails()
     priceStr = "" # for use before assigment
     with if_error_print_and_continue():
@@ -254,19 +254,19 @@ def get_item_page_details(url, page: Page):
             if invalid_str in body:
                 print("product is far or not available")
                 database.update_item_deleted(url)
-                return
+                return False
         title = page.locator(xtitle).text_content()
         priceStr = page.locator(xprice).text_content()
         description = page.locator(xdesc).text_content()
         if not title or not priceStr:
             print(f"title and price are required: title '{title}' price '{priceStr}'")
             database.update_item_deleted(url)
-            return
+            return False
     price = price_str_to_int(priceStr)
     if not price:
         print(f"invalid price {priceStr}")
         database.update_item_deleted(url)
-        return
+        return False
     item.title = title
     item.priceStr = priceStr
     item.description = description or ""
@@ -279,10 +279,10 @@ def get_item_page_details(url, page: Page):
         item.priceArs = price
         item.isUsd = False
     item.print()
-    database.update_item_by_url(url, item.to_dict())
+    return database.update_item_by_url(url, item.to_dict())
 
 
-def page_of_items(pages=1000):
+def page_of_items(pages: int = 1000) -> Iterator:
     page = 1
     while True:
         items = database.get_items_incomplete(page, pages).items
@@ -330,27 +330,22 @@ def pull_articles(page: Page, context: BrowserContext) -> None:
         time.sleep(2)
 
 
-def login(page, email: str, passwd: str) -> bool:
+def login(page: Page, email: str, password: str) -> bool:
     # TODO log error
     try:
         page.goto("https://www.facebook.com")
         page.fill("input#email", email)
-        page.fill("input#pass", passwd)
+        page.fill("input#pass", password)
         page.click("button[type='submit']")
         return True
     except Exception:
         return False
 
 
-def search(page):
+def search(page: Page) -> None:
     page.goto(
         # MacBook
         # "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook&exact=false",
         # MacBook 16
         "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook%2016&exact=false",
     )
-
-
-def test(page):
-    login(page)
-    login(page)
