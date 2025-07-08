@@ -11,6 +11,8 @@ RUN apt update -y \
     sudo \
     vim \
     unzip \
+    cron \
+    util-linux \
     ca-certificates
 
 # Create marketface user
@@ -51,6 +53,15 @@ ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/po
 RUN unzip /tmp/pb.zip -d /tmp/pb/ \
     && mv /tmp/pb/pocketbase /usr/local/bin/pocketbase
 
+
+# Cron configuration
+COPY ./marketface.cron /etc/cron.d/marketface
+COPY ./cron.sh /home/marketface/cron.sh
+
+RUN chmod 0644 /etc/cron.d/marketface
+
+RUN crontab /etc/cron.d/marketface
+
 USER marketface
 
 # Install playwright dependencies
@@ -69,3 +80,7 @@ RUN mkdir -p ./data/base \
     && cd ./data/base \
     && pocketbase migrate \
     && pocketbase admin create romayengineer@gmail.com adminadmin\!
+
+# TODO enable manually for now with cron -f
+# because the pocketbase database needs to be run before running the script
+# CMD ["cron", "-f"]
