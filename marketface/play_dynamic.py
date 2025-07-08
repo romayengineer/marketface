@@ -282,7 +282,7 @@ def get_item_page_details(url: str, page: Page) -> bool:
     return database.update_item_by_url(url, item.to_dict())
 
 
-def page_of_items(pages: int = 1000) -> Iterator:
+def page_of_items(pages: int = 1000, interactive: bool = False) -> Iterator:
     page = 1
     while True:
         items = database.get_items_incomplete(page, pages).items
@@ -293,9 +293,10 @@ def page_of_items(pages: int = 1000) -> Iterator:
             if item.deleted:
                 continue
             yield item
-        inp = input("Continue? (Y/n): ")
-        if inp not in ["y", ""]:
-            break
+        if interactive:
+            inp = input("Continue? (Y/n): ")
+            if inp not in ["y", ""]:
+                break
         page += 1
 
 
@@ -347,5 +348,7 @@ def search(page: Page) -> None:
         # MacBook
         # "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook&exact=false",
         # MacBook 16
-        "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook%2016&exact=false",
+        # "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook%2016&exact=false",
+        # MacBook 32
+        "https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query=macbook%2032&exact=false",
     )
