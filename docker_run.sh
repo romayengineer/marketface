@@ -22,6 +22,7 @@ docker run -it \
     -v ./marketface:/home/marketface/marketface:rw \
     -v ./data:/home/marketface/data:rw \
     -v ./tests:/home/marketface/tests:ro \
+    -v ./cron.sh:/home/marketface/cron.sh:ro \
     -v ./creds.json:/home/marketface/creds.json:ro \
     -v ./browser_context.json:/home/marketface/browser_context.json:rw \
     --device=/dev/dri \
