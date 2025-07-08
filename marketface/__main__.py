@@ -23,30 +23,30 @@ def get_url_for_query(query: str) -> str:
 
 def main() -> None:
     urls: List[str] = [
-        # search apple for specific models, retina, pro, air
+        # build search url for apple with models, retina, pro, air
         get_url_for_query("apple retina"),
         get_url_for_query("apple pro"),
         get_url_for_query("apple air"),
-        # search apple for specific processors i7, m1, m2, m3, m4
+        # build search url for apple with processors, i7, m1, m2, m3, m4
         get_url_for_query("apple i7"),
         get_url_for_query("apple m1"),
         get_url_for_query("apple m2"),
         get_url_for_query("apple m3"),
         get_url_for_query("apple m4"),
-        # search apple for specific memories 16 gb, 32 gb
+        # build search url for apple with memory ram, 16 gb, 32 gb
         get_url_for_query("apple 16 gb"),
         get_url_for_query("apple 32 gb"),
-        # search macbooks for specific models, retina, pro, air
+        # build search url for macbooks with models, retina, pro, air
         get_url_for_query("macbook retina"),
         get_url_for_query("macbook pro"),
         get_url_for_query("macbook air"),
-        # search macbooks for specific processors i7, m1, m2, m3, m4
+        # build search url for macbooks with processors, i7, m1, m2, m3, m4
         get_url_for_query("macbook i7"),
         get_url_for_query("macbook m1"),
         get_url_for_query("macbook m2"),
         get_url_for_query("macbook m3"),
         get_url_for_query("macbook m4"),
-        # search macbooks for specific memories 16 gb, 32 gb
+        # build search url for macbooks with memory ram, 16 gb, 32 gb
         get_url_for_query("macbook 16 gb"),
         get_url_for_query("macbook 32 gb"),
     ]
@@ -56,13 +56,17 @@ def main() -> None:
         context = get_browser_context(p)
         page = new_page(context)
         login(page, email, password)
-        # first pull the publication links from each search page
+        # 1. pull the data for the remaining articles links left on the db
+        #    before pulling new ones
+        pull_articles(page, context)
+        # 2. pull for new articles links
         for url in urls:
             try:
                 print(f"SEARCH: {url}")
                 search(page, url)
+                # 3. save all new articles links from search page
                 collect_articles_all(page)
-                # then pull the data from each of the publication links
+                # 4. pull the data from each of the new articles links
                 pull_articles(page, context)
             except Exception as err:
                 print(err)
