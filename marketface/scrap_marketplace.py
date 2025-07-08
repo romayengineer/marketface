@@ -28,8 +28,8 @@ links_processed = set()
 argParser = argparse.ArgumentParser()
 
 # Adding optional argument
-argParser.add_argument("-e", "--Email", help="email to login")
-argParser.add_argument("-p", "--Password", help="password to login")
+argParser.add_argument("-e", "--Email", type=str, help="email to login")
+argParser.add_argument("-p", "--Password", type=str, help="password to login")
 argParser.add_argument(
     "-s", "--Show",
     action="store_true",
@@ -44,8 +44,8 @@ headless = not args.Show
 
 creds = read_creds(os.path.join(os.getcwd(), "creds.json"))
 
-email = args.Email or creds.get("email")
-password = args.Password or creds.get("password")
+email: str = args.Email or creds.get("email", "")
+password: str = args.Password or creds.get("password", "")
 
 if not email or not password:
     raise ArgumentTypeError("need to pass login credentials, email and password")
