@@ -1,10 +1,17 @@
+import sys
+sys.path.insert(0, "/home/marketface")
+
 import logging
 from dataclasses import dataclass
 from typing import Optional, Dict, Iterator, Any
 from urllib.parse import urlencode
 
+from marketface.logging import getLogger
+
 from playwright.sync_api import TimeoutError, BrowserContext, Page, Locator
 
+
+logger = getLogger("marketface.pages.facebook")
 
 xbody = "xpath=/html/body"
 ximg = "xpath=//img"
@@ -39,7 +46,7 @@ class ItemDetails:
 
     def log(self) -> None:
         for k, v in self.to_dict().items():
-            logging.info(f"{k.ljust(20)}: {v}\n")
+            logger.info(f"{k.ljust(20)}: {v}\n")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -105,11 +112,12 @@ class WebPage:
         self.timeout_ms = timeout_ms or 5000
         self.pages: Dict[str, Page] = {}
         self.current_page: Optional[Page] = None
+        self.logger = getLogger("marketface.pages.facebook.WebPage")
 
     def set_current_page(self, page_name:str, page: Page) -> None:
         self.current_page = page
         if page_name in self.pages and self.pages[page_name]:
-            logging.warning(f"page already exists in self.pages: '%s'", page_name)
+            self.logger.warning(f"page already exists in self.pages: '%s'", page_name)
         self.pages[page_name] = page
 
     def new_page(
@@ -136,7 +144,7 @@ class WebPage:
         try:
             page.goto(url)
         except TimeoutError as err:
-            logging.error("Navigation to '%s' failed: '%s'", url, err)
+            self.logger.error("Navigation to '%s' failed: '%s'", url, err)
             raise
         return page
 
@@ -167,20 +175,22 @@ class FacebookPage(WebPage):
         self.credentials = credentials
         self.host = host
         self.location = location
+        self.logger = getLogger("marketface.pages.facebook.FacebookPage")
 
     def login(
             self,
             timeout_ms: Optional[int] = None,
         ) -> "FacebookPage":
         page = self.open(url=self.host, page_name="login", timeout_ms=timeout_ms)
+        self.logger.info("login")
         try:
             page.fill("input#email", self.credentials.username)
             page.fill("input#pass", self.credentials.password)
             page.click("button[type='submit']")
         except TimeoutError:
-            logging.warning("login timeout occurred (possible causes: already logged in, network issues, or page not loading as expected)")
+            self.logger.warning("login timeout occurred (possible causes: already logged in, network issues, or page not loading as expected)")
         except Exception as err:
-            logging.error(err)
+            self.logger.error(err)
         return self
 
     def market_search(
@@ -283,17 +293,17 @@ class FacebookPage(WebPage):
         ]
         for invalid_str in invalid_strs:
             if invalid_str in body:
-                logging.warning("product is far or not available")
+                self.logger.warning("product is far or not available")
                 return None
         title = page.locator(xtitle).text_content()
         priceStr = page.locator(xprice1).text_content()
         description = page.locator(xdesc1).text_content()
         if not title or not priceStr:
-            logging.error("title and price are required: title '%s' price '%s'", title, priceStr)
+            self.logger.error("title and price are required: title '%s' price '%s'", title, priceStr)
             return None
         price = price_str_to_int(priceStr)
         if not price:
-            logging.error("invalid price '%s'", priceStr)
+            self.logger.error("invalid price '%s'", priceStr)
             return None
         item.title = title
         item.priceStr = priceStr
@@ -319,6 +329,7 @@ def test():
 
     from marketface.scrap_marketplace import email, password
     from marketface.scrap_marketplace import get_browser_context
+    logger.info("login jaja 22")
 
     with sync_playwright() as p:
         context = get_browser_context(p)
@@ -333,7 +344,7 @@ def test():
             )
 
         for href in facebook.get_market_href():
-            logging.info(href)
+            logger.info(href)
             facebook.market_item(href)
 
 
