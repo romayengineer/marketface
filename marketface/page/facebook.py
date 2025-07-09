@@ -1,14 +1,96 @@
 from dataclasses import dataclass
-from typing import Optional, Dict, Iterator
+from typing import Optional, Dict, Iterator, Any
 from urllib.parse import urlencode
 
 from playwright.sync_api import TimeoutError, BrowserContext, Page, Locator
+
+
+xbody = "xpath=/html/body"
+ximg = "xpath=//img"
+
+# common xpath that is used in all other xpaths
+xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]"
+xtitle = f"xpath={xbase}/div[1]/div[1]/h1"
+xprice1 = f"xpath={xbase}/div[1]/div[1]/div[1]"
+xprice2 = f"xpath={xbase}/div[1]/div[2]"
+xdesc1 = f"xpath={xbase}/div[1]/div[5]/div/div[2]/div[1]"
+xdesc2 = f"xpath={xbase}/div[5]"
 
 
 @dataclass
 class LoginCredentials:
     username: str
     password: str
+
+
+class ItemDetails:
+
+    def __init__(self):
+        self.title = ""
+        self.description = ""
+        self.priceStr = ""
+        self.price = ""  # price without currency
+        self.priceArs = 0.0  # price in Argentinian Pesos
+        self.priceUsd = 0.0  # price in Dollars
+        self.usdArsRate = 1230.00
+        self.isUsd = False
+        self.deleted = False
+
+    def print(self) -> None:
+        for k, v in self.to_dict().items():
+            print(f"{k.ljust(20)}: {v}\n")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "deleted": self.deleted,
+            "title": self.title,
+            "description": self.description,
+            "priceStr": self.priceStr,
+            "priceArs": self.priceArs,
+            "priceUsd": self.priceUsd,
+            "usd": self.isUsd,
+            "usdArsRate": self.usdArsRate,
+        }
+
+
+def drop_leading_nondigits(priceStr: str) -> str:
+    while priceStr and not priceStr[0].isdigit():
+        priceStr = priceStr[1:]
+    return priceStr
+
+
+def get_number_saparated(priceStr: str) -> Optional[int]:
+    """
+    if number is for example 123.456123.456
+    is (123.456 + 123.456) there are two numbers
+    we get the first by getting only 3 numbers after
+    separetor either dot or comma
+    """
+    separators = (".", ",",)
+    if not priceStr or not priceStr[0].isdigit():
+        return
+    sep = None
+    number = ""
+    use_sep = False
+    counter = 0
+    for c in priceStr:
+        if c in separators:
+            sep = c
+            use_sep = True
+            counter = 0
+        if counter != 0 and counter % 4 == 0:
+            return int(number)
+        elif c.isdigit():
+            number += c
+        if use_sep:
+            counter += 1
+    return int(number)
+
+
+def price_str_to_int(priceStr: str) -> Optional[int]:
+    newPriceStr = drop_leading_nondigits(priceStr)
+    price = get_number_saparated(newPriceStr)
+    return price
 
 
 class WebPage:
@@ -166,16 +248,59 @@ class FacebookPage(WebPage):
 
     def market_item(
             self,
-            item_id: str,
+            item_id_or_url: str,
             page: Optional[Page] = None,
         ) -> "FacebookPage":
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
-        page.goto(
-            f"{self.host}/marketplace/item/{item_id}"
-        )
+        if not item_id_or_url:
+            raise ValueError("item_id_or_url is required")
+        elif item_id_or_url.isdigit():
+            item_url = f"{self.host}/marketplace/item/{item_id_or_url}"
+        elif item_id_or_url.startswith("https") and "/marketplace/item/" in item_id_or_url:
+            item_url = item_id_or_url
+        page.goto(item_url)
         return self
+
+    def market_details(self, page: Optional[Page] = None) -> Optional[ItemDetails]:
+        page = page or self.current_page
+        if not page:
+            raise ValueError("page is required")
+        item = ItemDetails()
+        body = str(page.locator(xbody).text_content())
+        invalid_strs = [
+            "Esta publicación ya no",
+            "This listing is far",
+            "This Listing Isn't",
+        ]
+        for invalid_str in invalid_strs:
+            if invalid_str in body:
+                print("product is far or not available")
+                return None
+        title = page.locator(xtitle).text_content()
+        priceStr = page.locator(xprice1).text_content()
+        description = page.locator(xdesc1).text_content()
+        if not title or not priceStr:
+            print(f"title and price are required: title '{title}' price '{priceStr}'")
+            return None
+        price = price_str_to_int(priceStr)
+        if not price:
+            print(f"invalid price {priceStr}")
+            return None
+        item.title = title
+        item.priceStr = priceStr
+        item.description = description or ""
+        if price < 10000:
+            item.priceUsd = price
+            item.priceArs = round(price * item.usdArsRate, 2)
+            item.isUsd = True
+        else:
+            item.priceUsd = round(price / item.usdArsRate, 2)
+            item.priceArs = price
+            item.isUsd = False
+        item.print()
+        return item
 
 
 def test():
@@ -202,6 +327,7 @@ def test():
 
         for href in facebook.get_market_href():
             print(href)
+            facebook.market_item(href)
 
 
 if __name__ == "__main__":
