@@ -46,7 +46,8 @@ def main() -> None:
         # page = open_new_page(context)
         # login(page, email, password)
         # error_url = "https://www.facebook.com/marketplace/item/1591032414860845"
-        error_url = "https://www.facebook.com/marketplace/item/3946724162140505"
+        # error_url = "https://www.facebook.com/marketplace/item/3946724162140505"
+        error_url = "https://www.facebook.com/marketplace/item/651361191023356"
         # this function fails on the selector waits and times out
         # open_article_page(context, error_url)
         new_page = open_new_page(context)

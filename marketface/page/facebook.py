@@ -1,7 +1,6 @@
 import sys
 sys.path.insert(0, "/home/marketface")
 
-import logging
 from dataclasses import dataclass
 from typing import Optional, Dict, Iterator, Any
 from urllib.parse import urlencode
@@ -345,7 +344,13 @@ def test():
 
         for href in facebook.get_market_href():
             logger.info(href)
-            facebook.market_item(href)
+            item = facebook.market_item(
+                href
+            ).market_details()
+            if not item:
+                logger.error("could not get item details")
+                continue
+            item.log()
 
 
 if __name__ == "__main__":
