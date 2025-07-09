@@ -102,8 +102,8 @@ class WebPage:
             timeout_ms: Optional[int] = None
         ):
         self.context: BrowserContext = context
-        self.timeout_ms = timeout_ms or 5000 # 5 seconds
-        self.pages: Dict[str, Page] = {} # TODO
+        self.timeout_ms = timeout_ms or 5000
+        self.pages: Dict[str, Page] = {}
         self.current_page: Optional[Page] = None
 
     def set_current_page(self, page_name:str, page: Page) -> None:
@@ -133,6 +133,11 @@ class WebPage:
         page_name = page_name or url
         page = self.new_page(page_name, timeout_ms=timeout_ms)
         page.goto(url)
+        try:
+            page.goto(url)
+        except TimeoutError as err:
+            logging.error("Navigation to '%s' failed: '%s'", url, err)
+            raise
         return page
 
     def get_links(
@@ -143,9 +148,10 @@ class WebPage:
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
-        links = page.locator(xpath).all()
-        for link in links:
-            yield link
+        locator = page.locator(xpath)
+        count = locator.count()
+        for i in range(count):
+            yield locator.nth(i)
 
 
 class FacebookPage(WebPage):
@@ -172,7 +178,7 @@ class FacebookPage(WebPage):
             page.fill("input#pass", self.credentials.password)
             page.click("button[type='submit']")
         except TimeoutError:
-            logging.warning("already log in")
+            logging.warning("login timeout occurred (possible causes: already logged in, network issues, or page not loading as expected)")
         except Exception as err:
             logging.error(err)
         return self
@@ -245,7 +251,7 @@ class FacebookPage(WebPage):
                 market_id = self.get_market_id(url=href)
                 yield f"{self.host}/marketplace/item/{market_id}"
             else:
-                raise NotImplementedError("TODO")
+                raise NotImplementedError("get_market_id only supports relative urls starting with /marketplace/item/")
 
     def market_item(
             self,
