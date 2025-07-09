@@ -101,9 +101,10 @@ def route_rules(context: BrowserContext) -> None:
 
 def get_browser_context(p: Playwright) -> BrowserContext:
     browser: Browser = p.chromium.launch(headless=headless, slow_mo=200)
+    print("New Browser")
     context: BrowserContext = browser.new_context(storage_state=storage_state_file)
     route_rules(context)
-    print("New Browser")
+    print("New Context")
     return context
 
 
