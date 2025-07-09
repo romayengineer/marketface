@@ -1,3 +1,4 @@
+import logging
 from dataclasses import dataclass
 from typing import Optional, Dict, Iterator, Any
 from urllib.parse import urlencode
@@ -36,9 +37,9 @@ class ItemDetails:
         self.isUsd = False
         self.deleted = False
 
-    def print(self) -> None:
+    def log(self) -> None:
         for k, v in self.to_dict().items():
-            print(f"{k.ljust(20)}: {v}\n")
+            logging.info(f"{k.ljust(20)}: {v}\n")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -108,7 +109,7 @@ class WebPage:
     def set_current_page(self, page_name:str, page: Page) -> None:
         self.current_page = page
         if page_name in self.pages and self.pages[page_name]:
-            print(f"Warning - page already exists in self.pages: '{page_name}'")
+            logging.warning(f"page already exists in self.pages: '%s'", page_name)
         self.pages[page_name] = page
 
     def new_page(
@@ -171,9 +172,9 @@ class FacebookPage(WebPage):
             page.fill("input#pass", self.credentials.password)
             page.click("button[type='submit']")
         except TimeoutError:
-            print("Warning - already log in")
+            logging.warning("already log in")
         except Exception as err:
-            print("Error - ", err)
+            logging.error(err)
         return self
 
     def market_search(
@@ -276,17 +277,17 @@ class FacebookPage(WebPage):
         ]
         for invalid_str in invalid_strs:
             if invalid_str in body:
-                print("product is far or not available")
+                logging.warning("product is far or not available")
                 return None
         title = page.locator(xtitle).text_content()
         priceStr = page.locator(xprice1).text_content()
         description = page.locator(xdesc1).text_content()
         if not title or not priceStr:
-            print(f"title and price are required: title '{title}' price '{priceStr}'")
+            logging.error("title and price are required: title '%s' price '%s'", title, priceStr)
             return None
         price = price_str_to_int(priceStr)
         if not price:
-            print(f"invalid price {priceStr}")
+            logging.error("invalid price '%s'", priceStr)
             return None
         item.title = title
         item.priceStr = priceStr
@@ -299,7 +300,7 @@ class FacebookPage(WebPage):
             item.priceUsd = round(price / item.usdArsRate, 2)
             item.priceArs = price
             item.isUsd = False
-        item.print()
+        item.log()
         return item
 
 
@@ -326,7 +327,7 @@ def test():
             )
 
         for href in facebook.get_market_href():
-            print(href)
+            logging.info(href)
             facebook.market_item(href)
 
 
