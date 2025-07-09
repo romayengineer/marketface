@@ -20,7 +20,7 @@ from contextlib import contextmanager
 from importlib import reload
 
 import requests  # mypy: ignore
-from playwright.sync_api import TimeoutError, BrowserContext, Page, Locator
+from playwright.sync_api import BrowserContext, Page, Locator
 from pocketbase.utils import ClientResponseError
 from typing import Optional, Dict, Any, Iterator
 

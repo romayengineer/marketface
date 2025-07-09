@@ -364,7 +364,6 @@ def test():
 
     from marketface.scrap_marketplace import email, password
     from marketface.scrap_marketplace import get_browser_context
-    logger.info("login jaja 22")
 
     with sync_playwright() as p:
         context = get_browser_context(p)
