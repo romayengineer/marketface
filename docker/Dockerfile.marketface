@@ -1,7 +1,7 @@
-FROM python:3.13
+FROM python:3.10
 
 # Upgrade pip
-RUN pip install --upgrade pip setuptools wheel pipenv
+RUN pip install --upgrade pip setuptools wheel pipenv supervisor
 
 # Install dependencies
 RUN apt update -y \
@@ -9,7 +9,11 @@ RUN apt update -y \
     apt install -y \
     postgresql-client \
     sudo \
-    vim
+    vim \
+    unzip \
+    cron \
+    util-linux \
+    ca-certificates
 
 # Create marketface user
 RUN adduser \
@@ -18,6 +22,7 @@ RUN adduser \
     --disabled-password \
     --shell /bin/bash \
     --home /home/marketface \
+    --uid 1000 \
     marketface
 
 # Add marketface user to sudo group
@@ -41,10 +46,41 @@ RUN rm -rf /root/.local/share/virtualenvs/marketface-*
 # Install dependencies
 RUN pipenv install --system
 
+ARG PB_VERSION=0.22.34
+
+# download and unzip PocketBase
+ADD https://github.com/pocketbase/pocketbase/releases/download/v${PB_VERSION}/pocketbase_${PB_VERSION}_linux_amd64.zip /tmp/pb.zip
+RUN unzip /tmp/pb.zip -d /tmp/pb/ \
+    && mv /tmp/pb/pocketbase /usr/local/bin/pocketbase
+
+
+# Cron configuration
+COPY ./marketface.cron /etc/cron.d/marketface
+COPY ./cron.sh /home/marketface/cron.sh
+
+RUN chmod 0644 /etc/cron.d/marketface
+
+RUN crontab /etc/cron.d/marketface
+
+USER marketface
+
 # Install playwright dependencies
 RUN playwright install-deps
 
 # Install chromium for playwright
 RUN playwright install chromium
 
-USER marketface
+COPY ./marketface ./marketface
+
+# mount this file
+# COPY ./browser_context.json ./browser_context.json
+
+# This is not a real password is meant to run and test locally
+RUN mkdir -p ./data/base \
+    && cd ./data/base \
+    && pocketbase migrate \
+    && pocketbase admin create romayengineer@gmail.com adminadmin\!
+
+# TODO enable manually for now with cron -f
+# because the pocketbase database needs to be run before running the script
+# CMD ["cron", "-f"]

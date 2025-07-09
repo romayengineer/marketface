@@ -22,6 +22,21 @@ pocketbase (binary) 0.27.2
 - pipenv shell
 - playwright install chromium
 
+## Build with Docker
+
+```
+docker build -t marketface -f ./docker/Dockerfile.marketface . --progress=plain
+```
+
+## Create table
+
+play_dynamic.database.create_table("items")
+
+## Pocketbase login
+
+- http://127.0.0.1:8090/_/#/login
+
+
 ## How to run
 
 python marketface/scrap_marketface.py
