@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from typing import Optional, Dict, Iterator, Any
 from urllib.parse import urlencode
 
-from marketface.logging import getLogger
+from marketface.logger import getLogger
 
 from playwright.sync_api import TimeoutError, BrowserContext, Page, Locator
 
@@ -45,7 +45,7 @@ class ItemDetails:
 
     def log(self) -> None:
         for k, v in self.to_dict().items():
-            logger.info(f"{k.ljust(20)}: {v}\n")
+            logger.info(f"{k.ljust(20)}: {v}")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -161,6 +161,41 @@ class WebPage:
             yield locator.nth(i)
 
 
+class MarketplacePage(WebPage):
+
+    def __init__(
+            self,
+            context: BrowserContext,
+            timeout_ms: Optional[int] = None
+        ):
+        super().__init__(context=context, timeout_ms=timeout_ms)
+        self.logger = getLogger("marketface.pages.facebook.MarketplacePage")
+
+    def get_title(self, page: Page) -> Optional[str]:
+        self.logger.info("getting title")
+        return page.locator(xtitle).text_content()
+
+    def get_price(self, page: Page) -> Optional[str]:
+        self.logger.info("getting price")
+        try:
+            # first selector option
+            return page.locator(xprice1).text_content()
+        except TimeoutError:
+            # second selector option
+            self.logger.info("first selector failed for price using second selector")
+            return page.locator(xprice2).text_content()
+
+    def get_description(self, page: Page) -> Optional[str]:
+        self.logger.info("getting description")
+        try:
+            # first selector option
+            return page.locator(xdesc1).text_content()
+        except TimeoutError:
+            # second selector option
+            self.logger.info("first selector failed for description using second selector")
+            return page.locator(xdesc2).text_content()
+
+
 class FacebookPage(WebPage):
 
     def __init__(
@@ -175,6 +210,7 @@ class FacebookPage(WebPage):
         self.host = host
         self.location = location
         self.logger = getLogger("marketface.pages.facebook.FacebookPage")
+        self.market = MarketplacePage(context=context)
 
     def login(
             self,
@@ -294,9 +330,9 @@ class FacebookPage(WebPage):
             if invalid_str in body:
                 self.logger.warning("product is far or not available")
                 return None
-        title = page.locator(xtitle).text_content()
-        priceStr = page.locator(xprice1).text_content()
-        description = page.locator(xdesc1).text_content()
+        title = self.market.get_title(page)
+        priceStr = self.market.get_price(page)
+        description = self.market.get_description(page)
         if not title or not priceStr:
             self.logger.error("title and price are required: title '%s' price '%s'", title, priceStr)
             return None

@@ -55,9 +55,9 @@ def main() -> None:
         # import pdb; pdb.set_trace()
         title = new_page.locator(xtitle).text_content()
         print(f"title: {title}")
-        priceStr = new_page.locator(xprice2).text_content()
+        priceStr = new_page.locator(xprice1).text_content()
         print(f"priceStr: {priceStr}")
-        description = new_page.locator(xdesc2).text_content()
+        description = new_page.locator(xdesc1).text_content()
         print(f"description: {description}")
         new_page.close()
 
