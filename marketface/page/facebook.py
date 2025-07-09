@@ -206,7 +206,7 @@ class FacebookPage(WebPage):
         if not query:
             raise ValueError("query is required")
         params = {"query": query, "exact": str(exact)}
-        if min_price:
+        if min_price and min_price > 0:
             params["minPrice"] = str(min_price)
         encoded_params = urlencode(params)
         page.goto(
