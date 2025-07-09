@@ -32,6 +32,9 @@ from marketface.utils import get_file_name_from_url
 
 reload(database)
 
+# timeout in milliseconds
+timeout_ms = 5000
+
 shortcuts = {
     # shortcut for search
     "s": "play_dynamic.search(page)",
@@ -300,6 +303,32 @@ def page_of_items(pages: int = 1000, interactive: bool = False) -> Iterator:
         page += 1
 
 
+def open_new_page(context: BrowserContext, timeout: Optional[int] = timeout_ms) -> Page:
+    timeout = timeout or timeout_ms
+    page: Page = context.new_page()
+    page.set_default_navigation_timeout(timeout)
+    page.set_default_timeout(timeout)
+    print("New Page")
+    return page
+
+
+def open_article_page(context: BrowserContext, url: str) -> bool:
+    new_page = open_new_page(context)
+    print("Article URL:      ", url)
+    try:
+        new_page.goto(url)
+        time.sleep(2)
+        get_item_page_details(url, new_page)
+        # TODO get_item_page_source(item.url, new_page)
+    except Exception as err:
+        print("Error: ", err)
+        database.update_item_deleted(url)
+        new_page.close()
+        return False
+    new_page.close()
+    return True
+
+
 def pull_articles(page: Page, context: BrowserContext) -> None:
     """
     similar to collect_articles but this function
@@ -311,23 +340,7 @@ def pull_articles(page: Page, context: BrowserContext) -> None:
     """
     # TODO remove pages=1 is just for testing and get only one
     for item in page_of_items():
-        new_page = context.new_page()
-        new_url = item.url
-        print("new_url:      ", new_url)
-        try:
-            new_page.goto(new_url)
-        except TimeoutError as err:
-            print("TimeoutError continue: ", err)
-            continue
-        time.sleep(2)
-        try:
-            # TODO
-            get_item_page_details(item.url, new_page)
-            # get_item_page_source(item.url, new_page)
-        except Exception as err:
-            print(err)
-            database.update_item_deleted(item.url)
-        new_page.close()
+        open_article_page(context, item.url)
         time.sleep(2)
 
 

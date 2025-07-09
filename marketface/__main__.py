@@ -2,27 +2,34 @@ import os
 import sys
 
 from time import sleep
-from typing import List
+from typing import List, Optional
 
 from playwright.sync_api import sync_playwright
 
 sys.path.insert(0, "/home/marketface")
 
 
-from marketface.play_dynamic import login, search, pull_articles
+from marketface.play_dynamic import login, search, pull_articles, open_new_page
 from marketface.scrap_marketplace import email, password
-from marketface.scrap_marketplace import get_browser_context, new_page
+from marketface.scrap_marketplace import get_browser_context
 from marketface.scrap_marketplace import collect_articles_all
 
 
-def get_url_for_query(query: str) -> str:
+def get_url_for_query(query: str, min_price: Optional[int] = None) -> str:
     # "%20" means space so "macbook%2032"
     newQuery = query.replace(" ", "%20")
-    return f"https://www.facebook.com/marketplace/buenosaires/search?minPrice=140000&query={newQuery}&exact=false"
+    minPrice = ""
+    if min_price:
+        minPrice = f"&minPrice={min_price}"
+    return f"https://www.facebook.com/marketplace/buenosaires/search?query={newQuery}&exact=false{minPrice}"
 
 
 def main() -> None:
     urls: List[str] = [
+        # build search url for moto honda wave
+        get_url_for_query("moto honda"),
+        get_url_for_query("honda wave"),
+        get_url_for_query("moto honda wave"),
         # build search url for apple with models, retina, pro, air
         get_url_for_query("apple retina"),
         get_url_for_query("apple pro"),
@@ -54,7 +61,7 @@ def main() -> None:
         raise ValueError(f"email and password are required for login")
     with sync_playwright() as p:
         context = get_browser_context(p)
-        page = new_page(context)
+        page = open_new_page(context)
         login(page, email, password)
         # 1. pull the data for the remaining articles links left on the db
         #    before pulling new ones

@@ -16,11 +16,11 @@ sys.path.insert(0, os.getcwd())
 # dynamically and I update the code to see the changing without
 # reloading the script or browser
 from marketface import play_dynamic
+from marketface.play_dynamic import open_new_page
 from marketface.utils import shorten_item_url
 from marketface.creds import read_creds
 
 
-timeout = 3000
 
 links_processed = set()
 
@@ -107,14 +107,6 @@ def get_browser_context(p: Playwright) -> BrowserContext:
     return context
 
 
-def new_page(context: BrowserContext) -> Page:
-    page: Page = context.new_page()
-    page.set_default_timeout(timeout)
-    time.sleep(3)
-    print("New Page")
-    return page
-
-
 def play_repl(context: BrowserContext, page: Page) -> None:
     # eval may use context and/or page so keep these arguments
     # these variables are used dynamically by eval
@@ -182,7 +174,7 @@ def collect_articles_all(page: Page) -> None:
             page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
         except Exception as err:
             print(err)
-        time.sleep(3)
+        # time.sleep(3)
     print("all ", counter)
 
 
@@ -190,7 +182,7 @@ def main() -> None:
     with sync_playwright() as p:
         context = get_browser_context(p)
         try:
-            page = new_page(context)
+            page = open_new_page(context)
             play_repl(context, page)
         finally:
             print("saving browser context")

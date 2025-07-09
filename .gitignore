@@ -9,3 +9,4 @@ Pipfile.lock
 venv
 creds.json
 browser_context.json
+draft.md
