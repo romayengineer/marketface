@@ -9,7 +9,8 @@ from playwright.sync_api import sync_playwright
 sys.path.insert(0, "/home/marketface")
 
 
-from marketface.play_dynamic import login, search, pull_articles, open_new_page
+from marketface import database
+from marketface.play_dynamic import login, search, pull_articles, open_new_page, page_of_items
 from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
 from marketface.scrap_marketplace import collect_articles_all
@@ -66,6 +67,19 @@ def main() -> None:
         # 1. pull the data for the remaining articles links left on the db
         #    before pulling new ones
         # pull_articles(page, context)
+        for db_item in page_of_items():
+            try:
+                item = facebook.market_item(
+                    db_item.url
+                ).market_details()
+                if not item:
+                    logger.error("could not get item details")
+                    database.update_item_deleted(db_item.url)
+                    continue
+                item.log()
+                database.update_item_by_url(db_item.url, item.to_dict())
+            except Exception as err:
+                logger.error(err)
         # 2. pull for new articles links
         for query in queries:
             try:
@@ -81,7 +95,7 @@ def main() -> None:
                             logger.error("could not get item details")
                             continue
                         item.log()
-                        # TODO integrate with database
+                        # TODO integrate with database save new items here
                     except:
                         pass
                 # 3. save all new articles links from search page

@@ -18,10 +18,15 @@ ximg = "xpath=//img"
 # common xpath that is used in all other xpaths
 xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]"
 xtitle = f"xpath={xbase}/div[1]/div[1]/h1"
-xprice1 = f"xpath={xbase}/div[1]/div[1]/div[1]"
-xprice2 = f"xpath={xbase}/div[1]/div[2]"
-xdesc1 = f"xpath={xbase}/div[1]/div[5]/div/div[2]/div[1]"
-xdesc2 = f"xpath={xbase}/div[5]"
+xprices = [
+    f"xpath={xbase}/div[1]/div[1]/div[1]",
+    f"xpath={xbase}/div[1]/div[2]",
+]
+xdescs = [
+    f"xpath={xbase}/div[1]/div[5]/div/div[2]/div[1]",
+    f"xpath={xbase}/div[5]",
+    f"xpath={xbase}/div[5]/div[2]/div/div[1]",
+]
 
 
 @dataclass
@@ -177,23 +182,27 @@ class MarketplacePage(WebPage):
 
     def get_price(self, page: Page) -> Optional[str]:
         self.logger.info("getting price")
-        try:
-            # first selector option
-            return page.locator(xprice1).text_content()
-        except TimeoutError:
-            # second selector option
-            self.logger.info("first selector failed for price using second selector")
-            return page.locator(xprice2).text_content()
+        for i, xpath in enumerate(xprices):
+            try:
+                return page.locator(xpath).text_content()
+            except TimeoutError:
+                self.logger.info("selector for price failed nth %s", i)
+        self.logger.error("selector for price failed all")
 
     def get_description(self, page: Page) -> Optional[str]:
         self.logger.info("getting description")
-        try:
-            # first selector option
-            return page.locator(xdesc1).text_content()
-        except TimeoutError:
-            # second selector option
-            self.logger.info("first selector failed for description using second selector")
-            return page.locator(xdesc2).text_content()
+        for i, xpath in enumerate(xdescs):
+            try:
+                description = page.locator(xpath).text_content()
+                if not description:
+                    continue
+                if "Seller's description" in description:
+                    self.logger.warning("description contains 'Seller's description'")
+                    continue
+                return description
+            except TimeoutError:
+                self.logger.info("selector for description failed nth %s", i)
+        self.logger.error("selector for description failed all")
 
 
 class FacebookPage(WebPage):

@@ -26,6 +26,7 @@ xprice1 = f"xpath={xbase}/div[1]/div[1]/div[1]"
 xprice2 = f"xpath={xbase}/div[1]/div[2]"
 xdesc1 = f"xpath={xbase}/div[1]/div[5]/div/div[2]/div[1]"
 xdesc2 = f"xpath={xbase}/div[5]"
+xdesc3 = f"xpath={xbase}/div[5]/div[2]/div/div[1]"
 
 
 
@@ -47,7 +48,8 @@ def main() -> None:
         # login(page, email, password)
         # error_url = "https://www.facebook.com/marketplace/item/1591032414860845"
         # error_url = "https://www.facebook.com/marketplace/item/3946724162140505"
-        error_url = "https://www.facebook.com/marketplace/item/651361191023356"
+        # error_url = "https://www.facebook.com/marketplace/item/651361191023356"
+        error_url = "https://www.facebook.com/marketplace/item/1181373666767209"
         # this function fails on the selector waits and times out
         # open_article_page(context, error_url)
         new_page = open_new_page(context)
@@ -55,9 +57,9 @@ def main() -> None:
         # import pdb; pdb.set_trace()
         title = new_page.locator(xtitle).text_content()
         print(f"title: {title}")
-        priceStr = new_page.locator(xprice1).text_content()
+        priceStr = new_page.locator(xprice2).text_content()
         print(f"priceStr: {priceStr}")
-        description = new_page.locator(xdesc1).text_content()
+        description = new_page.locator(xdesc3).text_content()
         print(f"description: {description}")
         new_page.close()
 

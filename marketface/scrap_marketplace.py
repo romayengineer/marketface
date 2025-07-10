@@ -51,7 +51,7 @@ if not email or not password:
     raise ArgumentTypeError("need to pass login credentials, email and password")
 
 
-storage_state_file="browser_context.json"
+storage_state_file="/home/marketface/browser_context.json"
 
 
 def route_rules(context: BrowserContext) -> None:
