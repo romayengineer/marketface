@@ -88,6 +88,8 @@ def main() -> None:
         for query in queries:
             logger.info("searching with query '%s'", query)
             try:
+                # TODO scroll down to get all items in search page
+                # page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                 facebook.market_search(
                     query=query
                 )
