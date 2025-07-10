@@ -71,16 +71,17 @@ def main() -> None:
                 if item:
                     item.log()
                     if not item.title or not item.priceValid:
-                        logger.error("item details error on data: '%s' '%s' '%s'", db_item.url, item.title, item.price)
+                        logger.error("item details error on data: '%s' '%s' '%s' '%s'", db_item.id, db_item.url, item.title, item.price)
                         valid = False
                 else:
-                    logger.error("item details error on item is None: '%s'", db_item.url)
+                    logger.error("item details error on item is None: '%s' '%s'", db_item.id, db_item.url)
                     valid = False
                 if item and valid:
-                    database.update_item_by_url(db_item.url, item.to_dict())
-                    logger.info("item details created: '%s'", db_item.url)
+                    database.update_item_by_id(db_item.id, item.to_dict())
+                    logger.info("item details updated: '%s' '%s'", db_item.id, db_item.url)
                 else:
-                    database.update_item_deleted(db_item.url)
+                    logger.warning("item details deleting: '%s' '%s'", db_item.id, db_item.url)
+                    database.update_item_deleted_id(db_item.id)
             except Exception as err:
                 logger.error("item details error on details: %s", err)
         # 2. pull for new articles links

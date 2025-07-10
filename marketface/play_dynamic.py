@@ -247,6 +247,7 @@ def get_item_page_details(url: str, page: Page) -> bool:
 def page_of_items(pages: int = 1000, interactive: bool = False) -> Iterator:
     page = 1
     while True:
+        logger.info("requesting page of items %s", page)
         items = database.get_items_incomplete(page, pages).items
         if not items:
             break

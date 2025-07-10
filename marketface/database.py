@@ -104,8 +104,7 @@ def update_item_by_url(url: str, body_params: Dict) -> bool:
     if not record:
         return False
     rid = record.id
-    client.collection(TABLE_NAME).update(rid, body_params)
-    return True
+    return update_item_by_id(rid, body_params)
 
 def update_item_by_id(rid: str, body_params: Dict) -> bool:
     client.collection(TABLE_NAME).update(rid, body_params)
@@ -116,6 +115,12 @@ def update_item_deleted(url: str) -> bool:
     body_params = {"deleted": True}
     print("marked as deleted! ", url)
     return update_item_by_url(url, body_params)
+
+
+def update_item_deleted_id(rid: str) -> bool:
+    body_params = {"deleted": True}
+    print("marked as deleted! ", rid)
+    return update_item_by_id(rid, body_params)
 
 
 def create_item(href_full: str, img_path: Optional[str] = None) -> Optional[BaseModel]:

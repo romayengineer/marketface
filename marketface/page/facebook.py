@@ -365,7 +365,7 @@ class FacebookPage(WebPage):
             self.logger.error("title and price are required: title '%s' price '%s'", title, priceStr)
             return None
         price = price_str_to_int(priceStr)
-        if not price:
+        if price is None:
             self.logger.error("invalid price '%s'", priceStr)
             return None
         item.title = title
