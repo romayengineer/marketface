@@ -51,7 +51,7 @@ if not email or not password:
     raise ArgumentTypeError("need to pass login credentials, email and password")
 
 
-storage_state_file="browser_context.json"
+storage_state_file="/home/marketface/browser_context.json"
 
 
 def route_rules(context: BrowserContext) -> None:
@@ -101,9 +101,10 @@ def route_rules(context: BrowserContext) -> None:
 
 def get_browser_context(p: Playwright) -> BrowserContext:
     browser: Browser = p.chromium.launch(headless=headless, slow_mo=200)
+    print("New Browser")
     context: BrowserContext = browser.new_context(storage_state=storage_state_file)
     route_rules(context)
-    print("New Browser")
+    print("New Context")
     return context
 
 
@@ -133,7 +134,7 @@ def collect_item_data(link: Locator) -> None:
     imgs = link.locator(play_dynamic.ximg).all()
     img_src = imgs[0].get_attribute("src") if len(imgs) > 0 else ""
     # file_name = play_dynamic.download_image(href_short, img_src)
-    file_name = ""
+    file_name = None
     play_dynamic.create_item(href_full, file_name)
 
 
