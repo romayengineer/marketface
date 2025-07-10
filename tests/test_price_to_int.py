@@ -10,7 +10,6 @@ def number_to_str(number: int, sep: str) -> str:
     """
     numberStr = str(number)
     reversedNumberStr = numberStr[::-1]
-    # print(f"reversedNumberStr: {reversedNumberStr}")
     # add first digit
     reversedFormatedNumberStr = reversedNumberStr[0]
     # skip first digit
@@ -19,7 +18,6 @@ def number_to_str(number: int, sep: str) -> str:
         if i % 3 == 0:
             reversedFormatedNumberStr += sep
         reversedFormatedNumberStr += reversedNumberStr[i]
-    # print(f"reversedFormatedNumberStr: {reversedFormatedNumberStr}")
     formatedNumberStr = reversedFormatedNumberStr[::-1]
     return formatedNumberStr
 
@@ -108,9 +106,6 @@ class TestPriceStrToInt(unittest.TestCase):
             priceFormated = f"ARS{priceFormated}" * 2
             priceParsed = price_str_to_int(priceFormated)
             self.assertIsNotNone(priceParsed)
-            print("priceReal: ", priceReal)
-            print("priceFormated: ", priceFormated)
-            print("priceParsed: ", priceParsed)
             self.assertEqual(priceReal, priceParsed)
         for priceReal, _, _ in test_numbers:
             priceFormated = number_to_str_dot(priceReal)
