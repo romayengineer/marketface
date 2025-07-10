@@ -17,7 +17,12 @@ ximg = "xpath=//img"
 
 # common xpath that is used in all other xpaths
 xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]"
-xtitle = f"xpath={xbase}/div[1]/div[1]/h1"
+# TODO implement a way to handle all possible xpaths
+# for example copy the html of the xbase and parse later in another jov / function
+xtitles = [
+    f"xpath={xbase}/div[1]/div[1]/h1",
+    f"xpath={xbase}/div[1]/h1",
+]
 xprices = [
     f"xpath={xbase}/div[1]/div[1]/div[1]",
     f"xpath={xbase}/div[1]/div[2]",
@@ -45,6 +50,7 @@ class ItemDetails:
         self.priceArs = 0.0  # price in Argentinian Pesos
         self.priceUsd = 0.0  # price in Dollars
         self.usdArsRate = 1230.00
+        self.priceValid = False
         self.isUsd = False
         self.deleted = False
 
@@ -92,14 +98,21 @@ def get_number_saparated(priceStr: str) -> Optional[int]:
             counter = 0
         if counter != 0 and counter % 4 == 0:
             return int(number)
-        elif c.isdigit():
+        if c.isdigit():
             number += c
+        elif c in separators:
+            pass
+        else:
+            return int(number)
         if use_sep:
             counter += 1
     return int(number)
 
 
 def price_str_to_int(priceStr: str) -> Optional[int]:
+    if "free" in priceStr.lower():
+        logger.info("price string has 'free' returning 0")
+        return 0
     newPriceStr = drop_leading_nondigits(priceStr)
     price = get_number_saparated(newPriceStr)
     return price
@@ -121,7 +134,7 @@ class WebPage:
     def set_current_page(self, page_name:str, page: Page) -> None:
         self.current_page = page
         if page_name in self.pages and self.pages[page_name]:
-            self.logger.warning(f"page already exists in self.pages: '%s'", page_name)
+            self.logger.warning("page already exists in self.pages: '%s'", page_name)
         self.pages[page_name] = page
 
     def new_page(
@@ -178,7 +191,12 @@ class MarketplacePage(WebPage):
 
     def get_title(self, page: Page) -> Optional[str]:
         self.logger.info("getting title")
-        return page.locator(xtitle).text_content()
+        for i, xpath in enumerate(xtitles):
+            try:
+                return page.locator(xpath).text_content()
+            except TimeoutError:
+                self.logger.info("selector for title failed nth %s", i)
+        self.logger.error("selector for title failed all")
 
     def get_price(self, page: Page) -> Optional[str]:
         self.logger.info("getting price")
@@ -321,6 +339,7 @@ class FacebookPage(WebPage):
             item_url = f"{self.host}/marketplace/item/{item_id_or_url}"
         elif item_id_or_url.startswith("https") and "/marketplace/item/" in item_id_or_url:
             item_url = item_id_or_url
+        self.logger.info("goto: %s", item_url)
         page.goto(item_url)
         return self
 
@@ -360,7 +379,7 @@ class FacebookPage(WebPage):
             item.priceUsd = round(price / item.usdArsRate, 2)
             item.priceArs = price
             item.isUsd = False
-        item.log()
+        item.priceValid = True
         return item
 
 

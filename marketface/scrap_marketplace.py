@@ -134,7 +134,7 @@ def collect_item_data(link: Locator) -> None:
     imgs = link.locator(play_dynamic.ximg).all()
     img_src = imgs[0].get_attribute("src") if len(imgs) > 0 else ""
     # file_name = play_dynamic.download_image(href_short, img_src)
-    file_name = ""
+    file_name = None
     play_dynamic.create_item(href_full, file_name)
 
 

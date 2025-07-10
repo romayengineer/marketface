@@ -1,10 +1,16 @@
 import sys
-from typing import Dict, List
+from typing import Dict, List, Optional
+
+from marketface.logger import getLogger
 
 from pocketbase import PocketBase
 from pocketbase.utils import ClientResponseError
 from pocketbase.models.utils.list_result import ListResult
 from pocketbase.models.utils.base_model import BaseModel
+
+
+logger = getLogger("marketface.database")
+
 
 # TODO use a config file for this
 client = PocketBase("http://127.0.0.1:8090")
@@ -112,10 +118,12 @@ def update_item_deleted(url: str) -> bool:
     return update_item_by_url(url, body_params)
 
 
-def create_item(href_full, img_path=""):
-    client.collection(TABLE_NAME).create(
-        {
-            "url": href_full,
-            "img_path": img_path,
-        }
-    )
+def create_item(href_full: str, img_path: Optional[str] = None) -> Optional[BaseModel]:
+    if not href_full:
+        logger.error("item url is required")
+        return
+    data = {"url": href_full}
+    if img_path:
+        data["img_path"] = img_path
+    logger.info("creating item: %s", data)
+    return client.collection(TABLE_NAME).create(data)

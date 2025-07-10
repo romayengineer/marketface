@@ -1,19 +1,14 @@
-import os
 import sys
+sys.path.insert(0, "/home/marketface")
 
-from time import sleep
-from typing import List, Optional
+from typing import List
 
 from playwright.sync_api import sync_playwright
 
-sys.path.insert(0, "/home/marketface")
-
-
 from marketface import database
-from marketface.play_dynamic import login, search, pull_articles, open_new_page, page_of_items
+from marketface.play_dynamic import page_of_items, create_item
 from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
-from marketface.scrap_marketplace import collect_articles_all
 from marketface.page.facebook import FacebookPage, LoginCredentials
 from marketface.logger import getLogger
 
@@ -72,38 +67,43 @@ def main() -> None:
                 item = facebook.market_item(
                     db_item.url
                 ).market_details()
-                if not item:
-                    logger.error("could not get item details")
+                valid = True
+                if item:
+                    item.log()
+                    if not item.title or not item.priceValid:
+                        logger.error("item details error on data: '%s' '%s' '%s'", db_item.url, item.title, item.price)
+                        valid = False
+                else:
+                    logger.error("item details error on item is None: '%s'", db_item.url)
+                    valid = False
+                if item and valid:
+                    database.update_item_by_url(db_item.url, item.to_dict())
+                    logger.info("item details created: '%s'", db_item.url)
+                else:
                     database.update_item_deleted(db_item.url)
-                    continue
-                item.log()
-                database.update_item_by_url(db_item.url, item.to_dict())
             except Exception as err:
-                logger.error(err)
+                logger.error("item details error on details: %s", err)
         # 2. pull for new articles links
         for query in queries:
+            logger.info("searching with query '%s'", query)
             try:
                 facebook.market_search(
                     query=query
                 )
                 for href in facebook.get_market_href():
                     try:
-                        item = facebook.market_item(
-                            href
-                        ).market_details()
-                        if not item:
-                            logger.error("could not get item details")
-                            continue
-                        item.log()
-                        # TODO integrate with database save new items here
-                    except:
-                        pass
+                        model = create_item(href)
+                        if model:
+                            logger.info("item search created: '%s' '%s'", query, href)
+                    except Exception as err:
+                        logger.error("item search error on create '%s' '%s': %s", query, href, err)
                 # 3. save all new articles links from search page
                 # collect_articles_all(page)
                 # 4. pull the data from each of the new articles links
                 # pull_articles(page, context)
             except Exception as err:
-                print(err)
+                logger.error("item search error on search '%s': %s", query, err)
+        logger.info("main completed successfully")
 
 if __name__ == "__main__":
     main()

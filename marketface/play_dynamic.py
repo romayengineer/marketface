@@ -22,13 +22,18 @@ from importlib import reload
 import requests  # mypy: ignore
 from playwright.sync_api import BrowserContext, Page, Locator
 from pocketbase.utils import ClientResponseError
+from pocketbase.models.utils.base_model import BaseModel
 from typing import Optional, Dict, Any, Iterator
 
 from marketface import database
 from marketface.utils import get_file_name_from_url
+from marketface.logger import getLogger
+from marketface.page.facebook import price_str_to_int
 
 # TODO
 # from utils import shorten_item_url
+
+logger = getLogger("marketface.play_dynamic")
 
 reload(database)
 
@@ -127,13 +132,20 @@ def collect_articles_links(page: Page, xpath: str = "//a") -> Iterator[Locator]:
         yield coll
 
 
-def create_item(href_full: str, file_name: str = "") -> None:
+def create_item(href_full: str, file_name: Optional[str] = None) -> Optional[BaseModel]:
     try:
-        database.get_item_by_url(href_full)
-    except ClientResponseError:
-        print("record doesn't exist... creating it")
-        print("href_full: ", href_full)
-        database.create_item(href_full, file_name)
+        model = database.create_item(href_full, file_name)
+        logger.info("record doesn't exist... created: %s", href_full)
+        return model
+    except ClientResponseError as err:
+        if err.status == 400:
+            data: Dict = err.data.get('data', {})
+            key_url: Dict = data.get("url", {})
+            code = key_url.get("code", "")
+            if isinstance(code, str) and code == "validation_not_unique":
+                logger.info("item already exists")
+                return
+        logger.error("unexpected error status code 400 data %s", data)
 
 
 def download_image(href_short: str, img_src: str) -> str:
@@ -201,46 +213,6 @@ def get_item_page_source(url: str, page: Page) -> None:
     with open(f"data/source/{file_name}.html", "w") as file:
         inside = page.locator(locator).inner_html()
         file.write(inside)
-
-
-def drop_leading_nondigits(priceStr: str) -> str:
-    while priceStr and not priceStr[0].isdigit():
-        priceStr = priceStr[1:]
-    return priceStr
-
-
-def get_number_saparated(priceStr: str) -> Optional[int]:
-    """
-    if number is for example 123.456123.456
-    is (123.456 + 123.456) there are two numbers
-    we get the first by getting only 3 numbers after
-    separetor either dot or comma
-    """
-    separators = (".", ",",)
-    if not priceStr or not priceStr[0].isdigit():
-        return
-    sep = None
-    number = ""
-    use_sep = False
-    counter = 0
-    for c in priceStr:
-        if c in separators:
-            sep = c
-            use_sep = True
-            counter = 0
-        if counter != 0 and counter % 4 == 0:
-            return int(number)
-        elif c.isdigit():
-            number += c
-        if use_sep:
-            counter += 1
-    return int(number)
-
-
-def price_str_to_int(priceStr: str) -> Optional[int]:
-    newPriceStr = drop_leading_nondigits(priceStr)
-    price = get_number_saparated(newPriceStr)
-    return price
 
 
 def get_item_page_details(url: str, page: Page) -> bool:
