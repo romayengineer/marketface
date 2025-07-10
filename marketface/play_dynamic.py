@@ -165,17 +165,6 @@ def download_image(href_short: str, img_src: str) -> str:
     return file_name
 
 
-@contextmanager
-def if_error_print_and_continue():
-    try:
-        yield
-    except Exception as err:
-        # if there is any error is ether a timeout
-        # or a redirect and the selector is not found
-        # continue normally
-        print(type(err), err)
-
-
 class ItemDetails:
 
     def __init__(self):
@@ -217,26 +206,24 @@ def get_item_page_source(url: str, page: Page) -> None:
 
 def get_item_page_details(url: str, page: Page) -> bool:
     item = ItemDetails()
-    priceStr = "" # for use before assigment
-    with if_error_print_and_continue():
-        body = str(page.locator(xbody).text_content())
-        invalid_strs = [
-            "Esta publicación ya no",
-            "This listing is far",
-            "This Listing Isn't",
-        ]
-        for invalid_str in invalid_strs:
-            if invalid_str in body:
-                print("product is far or not available")
-                database.update_item_deleted(url)
-                return False
-        title = page.locator(xtitle).text_content()
-        priceStr = page.locator(xprice).text_content()
-        description = page.locator(xdesc).text_content()
-        if not title or not priceStr:
-            print(f"title and price are required: title '{title}' price '{priceStr}'")
+    body = str(page.locator(xbody).text_content())
+    invalid_strs = [
+        "Esta publicación ya no",
+        "This listing is far",
+        "This Listing Isn't",
+    ]
+    for invalid_str in invalid_strs:
+        if invalid_str in body:
+            print("product is far or not available")
             database.update_item_deleted(url)
             return False
+    title = page.locator(xtitle).text_content()
+    priceStr = page.locator(xprice).text_content()
+    description = page.locator(xdesc).text_content()
+    if not title or not priceStr:
+        print(f"title and price are required: title '{title}' price '{priceStr}'")
+        database.update_item_deleted(url)
+        return False
     price = price_str_to_int(priceStr)
     if not price:
         print(f"invalid price {priceStr}")
