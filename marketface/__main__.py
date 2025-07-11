@@ -9,7 +9,7 @@ from marketface import database
 from marketface.play_dynamic import page_of_items, create_item
 from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
-from marketface.page.facebook import FacebookPage, LoginCredentials
+from marketface.page.facebook import FacebookPage, LoginCredentials, PageBlocked
 from marketface.logger import getLogger
 
 
@@ -17,6 +17,7 @@ logger = getLogger("marketface.__main__")
 
 
 def main() -> None:
+    exit_with_error = False
     queries: List[str] = [
         # build search url for moto honda wave
         "moto honda",
@@ -90,9 +91,11 @@ def main() -> None:
             try:
                 # TODO scroll down to get all items in search page
                 # page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                facebook.market_search(
+                market_page = facebook.market_search(
                     query=query
                 )
+                if not market_page.valid_page:
+                    logger.warning("invalid page '%s'", query)
                 for href in facebook.get_market_href():
                     try:
                         model = create_item(href)
@@ -104,9 +107,16 @@ def main() -> None:
                 # collect_articles_all(page)
                 # 4. pull the data from each of the new articles links
                 # pull_articles(page, context)
+            except PageBlocked as err:
+                logger.error(err)
+                exit_with_error = True
+                break
             except Exception as err:
                 logger.error("item search error on search '%s': %s", query, err)
-        logger.info("main completed successfully")
+        if exit_with_error:
+            logger.error("main completed with an error")
+        else:
+            logger.info("main completed successfully")
 
 if __name__ == "__main__":
     main()

@@ -32,12 +32,22 @@ xdescs = [
     f"xpath={xbase}/div[5]",
     f"xpath={xbase}/div[5]/div[2]/div/div[1]",
 ]
+# To check if the session / account is blocked
+xblocked = "xpath=/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div"
 
 
 @dataclass
 class LoginCredentials:
     username: str
     password: str
+
+
+class PageInvalid(Exception):
+    pass
+
+
+class PageBlocked(PageInvalid):
+    pass
 
 
 class ItemDetails:
@@ -130,6 +140,7 @@ class WebPage:
         self.pages: Dict[str, Page] = {}
         self.current_page: Optional[Page] = None
         self.logger = getLogger("marketface.pages.facebook.WebPage")
+        self.valid_page = True
 
     def set_current_page(self, page_name:str, page: Page) -> None:
         self.current_page = page
@@ -177,6 +188,18 @@ class WebPage:
         count = locator.count()
         for i in range(count):
             yield locator.nth(i)
+        if count <= 0:
+            self.raise_if_blocked(page)
+
+    def is_blocked(self, page: Page) -> bool:
+        blocked_content = page.locator(xblocked).text_content()
+        return bool(
+            blocked_content and "You’re Temporarily Blocked" in blocked_content
+        )
+
+    def raise_if_blocked(self, page: Page) -> None:
+        if self.is_blocked(page):
+            raise PageBlocked("the session / account is blocked")
 
 
 class MarketplacePage(WebPage):
@@ -255,6 +278,9 @@ class FacebookPage(WebPage):
             self.logger.error(err)
         return self
 
+    def market_search_validate(self, page: Page) -> bool:
+        return not self.is_blocked(page)
+
     def market_search(
             self,
             query: str,
@@ -274,6 +300,8 @@ class FacebookPage(WebPage):
         page.goto(
             f"{self.host}/marketplace/{self.location}/search?{encoded_params}"
         )
+        # validate if blocked or any other unusual pages
+        self.valid_page = self.market_search_validate(page)
         return self
 
     def get_market_id(
@@ -305,7 +333,6 @@ class FacebookPage(WebPage):
 
     def get_market_links(
             self,
-            xpath: str = "//a",
             page: Optional[Page] = None,
         ) -> Iterator[Locator]:
         for link in self.get_links(page=page):
@@ -317,13 +344,17 @@ class FacebookPage(WebPage):
     def get_market_href(
             self,
         ) -> Iterator[str]:
+        links_found = False
         for link in self.get_market_links():
             href = link.get_attribute("href") or ""
             if href.startswith("/marketplace/item/"):
                 market_id = self.get_market_id(url=href)
+                links_found = True
                 yield f"{self.host}/marketplace/item/{market_id}"
             else:
                 raise NotImplementedError("get_market_id only supports relative urls starting with /marketplace/item/")
+        if not links_found and self.current_page:
+            self.raise_if_blocked(self.current_page)
 
     def market_item(
             self,
