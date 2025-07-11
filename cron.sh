@@ -13,7 +13,7 @@ _=/usr/bin/env
 cd /home/marketface
 
 # log env to know display and other envs are set up ok
-/usr/bin/env 2>&1 | tee -a /home/marketface/marketface.log
+# /usr/bin/env 2>&1 | tee -a /home/marketface/marketface.log
 
 # run script with flock to create a lock file and run once at the time
 flock -n /var/lock/marketface.lock -c "/usr/local/bin/python /home/marketface/marketface" 2>&1 | tee -a /home/marketface/marketface.log

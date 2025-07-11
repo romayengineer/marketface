@@ -130,6 +130,7 @@ class WebPage:
         self.pages: Dict[str, Page] = {}
         self.current_page: Optional[Page] = None
         self.logger = getLogger("marketface.pages.facebook.WebPage")
+        self.invalid_page = True
 
     def set_current_page(self, page_name:str, page: Page) -> None:
         self.current_page = page
@@ -255,6 +256,11 @@ class FacebookPage(WebPage):
             self.logger.error(err)
         return self
 
+    def market_search_validate(self, page: Page) -> bool:
+        # TODO
+        is_valid = True
+        return is_valid
+
     def market_search(
             self,
             query: str,
@@ -274,6 +280,8 @@ class FacebookPage(WebPage):
         page.goto(
             f"{self.host}/marketplace/{self.location}/search?{encoded_params}"
         )
+        # validate if blocked or any other unusual pages
+        self.invalid_page = self.market_search_validate(page)
         return self
 
     def get_market_id(
