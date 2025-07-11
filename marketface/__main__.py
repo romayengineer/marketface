@@ -95,7 +95,7 @@ def main() -> None:
                     query=query
                 )
                 if not market_page.valid_page:
-                    logger.error("invalid page '%s'", query)
+                    logger.warning("invalid page '%s'", query)
                 for href in facebook.get_market_href():
                     try:
                         model = create_item(href)
@@ -114,7 +114,7 @@ def main() -> None:
             except Exception as err:
                 logger.error("item search error on search '%s': %s", query, err)
         if exit_with_error:
-            logger.info("main completed with an error")
+            logger.error("main completed with an error")
         else:
             logger.info("main completed successfully")
 

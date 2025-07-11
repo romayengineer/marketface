@@ -193,9 +193,9 @@ class WebPage:
 
     def is_blocked(self, page: Page) -> bool:
         blocked_content = page.locator(xblocked).text_content()
-        if blocked_content and "You’re Temporarily Blocked" in blocked_content:
-            return True
-        return False
+        return bool(
+            blocked_content and "You’re Temporarily Blocked" in blocked_content
+        )
 
     def raise_if_blocked(self, page: Page) -> None:
         if self.is_blocked(page):
@@ -279,8 +279,7 @@ class FacebookPage(WebPage):
         return self
 
     def market_search_validate(self, page: Page) -> bool:
-        is_valid = not self.is_blocked(page)
-        return is_valid
+        return not self.is_blocked(page)
 
     def market_search(
             self,
