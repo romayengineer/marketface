@@ -20,7 +20,7 @@ from marketface.play_dynamic import open_new_page
 from marketface.utils import shorten_item_url
 from marketface.creds import read_creds
 from marketface.logger import getLogger
-from marketface.router import route_rules
+from marketface.router import Router
 
 
 logger = getLogger("marketface.scrap_marketplace")
@@ -75,7 +75,8 @@ def get_browser_context(p: Playwright, with_rules: bool = True) -> BrowserContex
     print("New Browser")
     context: BrowserContext = browser.new_context(storage_state=storage_state_file)
     if with_rules:
-        route_rules(context)
+        router = Router(context)
+        router.apply_rules()
     print("New Context")
     return context
 
