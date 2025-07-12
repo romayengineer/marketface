@@ -1,9 +1,26 @@
 import re
+from abc import ABC, abstractmethod
+
 from playwright.sync_api import BrowserContext, Route
 
 
+class Router(ABC):
+
+    @abstractmethod
+    def __init__(self, context: BrowserContext) -> None:
+        ...
+
+    @abstractmethod
+    def apply_rules(self) -> None:
+        ...
+
+    @abstractmethod
+    def handle_all_routes(self, route: Route) -> None:
+        ...
+
+
 # --- PERFORMANCE BOOST - THIS IS THE NEW CODE ---
-class Router:
+class FacebookRouter(Router):
 
 
     def __init__(self, context: BrowserContext) -> None:
@@ -31,11 +48,11 @@ class Router:
     def apply_rules(self) -> None:
         # Apply this routing rule to the entire browser context.
         # The "**" is a glob pattern that matches all URLs.
-        self.context.route("**/*", self.handle_route)
+        self.context.route("**/*", self.handle_all_routes)
         print("🚀 Performance mode enabled: Blocking images, fonts, and stylesheets.")
 
 
-    def handle_route(self, route: Route) -> None:
+    def handle_all_routes(self, route: Route) -> None:
         # Check if the request's resource type is in our blocked list
         if route.request.resource_type in self.blocked_resource_types:
             # print(f"🚫 Blocking [resource]: {route.request.url}")
