@@ -1,4 +1,6 @@
 import re
+import time
+import threading
 from abc import ABC, abstractmethod
 
 from playwright.sync_api import BrowserContext, Route
@@ -17,6 +19,48 @@ class Router(ABC):
     @abstractmethod
     def handle_all_routes(self, route: Route) -> None:
         ...
+
+
+class RateLimiter(ABC):
+
+    @abstractmethod
+    def acquire(self) -> None:
+        ...
+
+
+class TokenBucketRateLimiter(RateLimiter):
+
+    def __init__(self, capacity: int) -> None:
+        self.capacity = capacity # constant
+        self.tokens = capacity
+        self.last_refill_time = time.perf_counter()
+        self.lock = threading.Lock()
+
+
+    def refill_tokens(self) -> None:
+        refill_time = time.perf_counter()
+        time_passed = refill_time - self.last_refill_time
+        new_tokens = time_passed * self.capacity
+        self.tokens = min(self.capacity, self.tokens + new_tokens)
+        self.last_refill_time = refill_time
+
+
+    def acquire(self, tokens_needed: int) -> None:
+        if tokens_needed > self.capacity:
+            raise ValueError("Tokens needed exceeds bucket capacity. Increase capacity or decrease batch size.")
+
+        while True:
+            with self.lock:
+                self.refill_tokens()
+                if self.tokens >= tokens_needed:
+                    self.tokens -= tokens_needed
+                    # Exit the loop and let the worker proceed
+                    return
+
+            # If we're here, we didn't have enough tokens.
+            # Sleep outside the lock to allow other threads to run.
+            # Sleep time can be small; it's just to prevent busy-waiting.
+            time.sleep(0.01)
 
 
 # --- PERFORMANCE BOOST - THIS IS THE NEW CODE ---
