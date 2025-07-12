@@ -2,6 +2,7 @@ import re
 import time
 import threading
 from abc import ABC, abstractmethod
+from typing import Optional
 
 from marketface.logger import getLogger
 
@@ -43,6 +44,7 @@ class TokenBucketRateLimiter(RateLimiter):
         self.tokens = capacity
         self.last_refill_time = time.perf_counter()
         self.lock = threading.Lock()
+        self.acquire_return_time: Optional[float] = None
 
 
     def refill_tokens(self) -> None:
@@ -63,12 +65,16 @@ class TokenBucketRateLimiter(RateLimiter):
                 if self.tokens >= tokens_needed:
                     self.tokens -= tokens_needed
                     # Exit the loop and let the worker proceed
+                    if self.acquire_return_time is not None:
+                        sleeped_for = time.perf_counter() - self.acquire_return_time
+                        if sleeped_for > 0.4:
+                            logger.info("time elapsed since acquire returned %s", sleeped_for)
+                    self.acquire_return_time = time.perf_counter()
                     return
 
             # If we're here, we didn't have enough tokens.
             # Sleep outside the lock to allow other threads to run.
             # Sleep time can be small; it's just to prevent busy-waiting.
-            # logger.info("thread sleep...")
             time.sleep(0.01)
 
 
@@ -96,7 +102,7 @@ class FacebookRouter(Router):
             r"google-analytics\.com",
             r"doubleclick\.net"
         ]
-        self.limiter = TokenBucketRateLimiter(capacity=20, rate_limit=20)
+        self.limiter = TokenBucketRateLimiter(capacity=35, rate_limit=35)
 
 
     def apply_rules(self) -> None:
