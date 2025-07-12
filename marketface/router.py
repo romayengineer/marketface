@@ -30,8 +30,11 @@ class RateLimiter(ABC):
 
 class TokenBucketRateLimiter(RateLimiter):
 
-    def __init__(self, capacity: int) -> None:
+    def __init__(self, capacity: float, rate_limit: float) -> None:
         self.capacity = capacity # constant
+        self.rate_limit = rate_limit # constant
+        if self.rate_limit > self.capacity:
+            raise ValueError("Rate limit exceeds bucket capacity")
         self.tokens = 0
         self.last_refill_time = time.perf_counter()
         self.lock = threading.Lock()
@@ -40,14 +43,14 @@ class TokenBucketRateLimiter(RateLimiter):
     def refill_tokens(self) -> None:
         refill_time = time.perf_counter()
         time_passed = refill_time - self.last_refill_time
-        new_tokens = time_passed * self.capacity
+        new_tokens = time_passed * self.rate_limit
         self.tokens = min(self.capacity, self.tokens + new_tokens)
         self.last_refill_time = refill_time
 
 
     def acquire(self, tokens_needed: int) -> None:
         if tokens_needed > self.capacity:
-            raise ValueError("Tokens needed exceeds bucket capacity. Increase capacity or decrease batch size.")
+            raise ValueError("Tokens needed exceeds bucket capacity")
 
         while True:
             with self.lock:
