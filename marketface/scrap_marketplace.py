@@ -19,8 +19,10 @@ from marketface import play_dynamic
 from marketface.play_dynamic import open_new_page
 from marketface.utils import shorten_item_url
 from marketface.creds import read_creds
+from marketface.logger import getLogger
 
 
+logger = getLogger("marketface.scrap_marketplace")
 
 links_processed = set()
 
@@ -97,6 +99,19 @@ def route_rules(context: BrowserContext) -> None:
     context.route("**/*", handle_route)
 
     print("🚀 Performance mode enabled: Blocking images, fonts, and stylesheets.")
+
+
+def interactive_save_browser_context(context: BrowserContext) -> None:
+    """
+    This is to refresh the session once is log out.
+    to break out of the loop just kill the process once the manual login is successful.
+    the reason the loggin is manual is because of captcha that has to be resolved manually
+    just once in the first login after that the session is stored in the browser_context.json
+    """
+    while True:
+        logger.info("saving browser context")
+        context.storage_state(path=storage_state_file)
+        time.sleep(10)
 
 
 def get_browser_context(p: Playwright) -> BrowserContext:

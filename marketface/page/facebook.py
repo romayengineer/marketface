@@ -192,7 +192,7 @@ class WebPage:
             self.raise_if_blocked(page)
 
     def is_blocked(self, page: Page) -> bool:
-        blocked_content = page.locator(xblocked).text_content()
+        blocked_content = page.locator(xblocked).first.text_content()
         return bool(
             blocked_content and "You’re Temporarily Blocked" in blocked_content
         )
