@@ -2,7 +2,6 @@ import re
 import time
 import threading
 from abc import ABC, abstractmethod
-from typing import Optional
 
 from marketface.logger import getLogger
 
@@ -44,7 +43,11 @@ class TokenBucketRateLimiter(RateLimiter):
         self.tokens = capacity
         self.last_refill_time = time.perf_counter()
         self.lock = threading.Lock()
-        self.acquire_return_time: Optional[float] = None
+        # it would be more semantically sound to set acquire_return_time to None
+        # but that requires to do an if not None check and that
+        # slows down the acquire function, so better to set this here
+        # and skip the check
+        self.acquire_return_time: float = time.perf_counter()
 
 
     def refill_tokens(self) -> None:
@@ -65,10 +68,9 @@ class TokenBucketRateLimiter(RateLimiter):
                 if self.tokens >= tokens_needed:
                     self.tokens -= tokens_needed
                     # Exit the loop and let the worker proceed
-                    if self.acquire_return_time is not None:
-                        sleeped_for = time.perf_counter() - self.acquire_return_time
-                        if sleeped_for > 0.4:
-                            logger.info("time elapsed since acquire returned %s", sleeped_for)
+                    sleeped_for = time.perf_counter() - self.acquire_return_time
+                    if sleeped_for > 0.5:
+                        logger.info("time elapsed since acquire returned %s", sleeped_for)
                     self.acquire_return_time = time.perf_counter()
                     return
 
