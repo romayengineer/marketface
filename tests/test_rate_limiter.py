@@ -6,7 +6,7 @@ from marketface.router import TokenBucketRateLimiter
 
 class TestRateLimiter(unittest.TestCase):
 
-    def _calculate_tome_should_take(self, capacity: float, requests_count: int, tokens_per_request: float, tokens_per_second: float) -> float:
+    def _calculate_time_should_take(self, capacity: float, requests_count: int, tokens_per_request: float, tokens_per_second: float) -> float:
         seconds_per_token = (1 / tokens_per_second)
         total_tokens_used = requests_count * tokens_per_request
         return (
@@ -20,7 +20,7 @@ class TestRateLimiter(unittest.TestCase):
 
         tokens_per_request = 1
         requests_count = 5
-        time_should_take = self._calculate_tome_should_take(
+        time_should_take = self._calculate_time_should_take(
             capacity, requests_count, tokens_per_request, tokens_per_second
         )
 
@@ -47,7 +47,7 @@ class TestRateLimiter(unittest.TestCase):
 
         tokens_per_request = 1
         requests_count = 5
-        time_should_take = self._calculate_tome_should_take(
+        time_should_take = self._calculate_time_should_take(
             capacity, requests_count, tokens_per_request, tokens_per_second
         )
 
@@ -75,7 +75,7 @@ class TestRateLimiter(unittest.TestCase):
 
         tokens_per_request = 1
         requests_count = 20
-        time_should_take = self._calculate_tome_should_take(
+        time_should_take = self._calculate_time_should_take(
             capacity, requests_count, tokens_per_request, tokens_per_second
         )
 
