@@ -3,7 +3,12 @@ import time
 import threading
 from abc import ABC, abstractmethod
 
+from marketface.logger import getLogger
+
 from playwright.sync_api import BrowserContext, Route
+
+
+logger = getLogger("marketface.router")
 
 
 class Router(ABC):
@@ -63,6 +68,7 @@ class TokenBucketRateLimiter(RateLimiter):
             # If we're here, we didn't have enough tokens.
             # Sleep outside the lock to allow other threads to run.
             # Sleep time can be small; it's just to prevent busy-waiting.
+            # logger.info("thread sleep...")
             time.sleep(0.01)
 
 
@@ -90,7 +96,7 @@ class FacebookRouter(Router):
             r"google-analytics\.com",
             r"doubleclick\.net"
         ]
-        self.limiter = TokenBucketRateLimiter(capacity=50, rate_limit=50)
+        self.limiter = TokenBucketRateLimiter(capacity=20, rate_limit=20)
 
 
     def apply_rules(self) -> None:
