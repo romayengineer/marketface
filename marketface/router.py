@@ -35,7 +35,7 @@ class TokenBucketRateLimiter(RateLimiter):
         self.rate_limit = rate_limit # constant
         if self.rate_limit > self.capacity:
             raise ValueError("Rate limit exceeds bucket capacity")
-        self.tokens = 0
+        self.tokens = capacity
         self.last_refill_time = time.perf_counter()
         self.lock = threading.Lock()
 
@@ -90,6 +90,7 @@ class FacebookRouter(Router):
             r"google-analytics\.com",
             r"doubleclick\.net"
         ]
+        self.limiter = TokenBucketRateLimiter(capacity=50, rate_limit=50)
 
 
     def apply_rules(self) -> None:
@@ -110,6 +111,7 @@ class FacebookRouter(Router):
             if re.search(domain, route.request.url):
                 # print(f"🚫 Blocking [domain]: {route.request.url}")
                 return route.abort()
-
+        # apply rate limiting logic
+        self.limiter.acquire(tokens_needed=1)
         # If the request is not blocked, let it continue
         return route.continue_()
