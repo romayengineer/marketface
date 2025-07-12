@@ -106,7 +106,7 @@ class FacebookRouter(Router):
             r"google-analytics\.com",
             r"doubleclick\.net"
         ]
-        self.limiter = TokenBucketRateLimiter(capacity=35, rate_limit=35)
+        self.limiter = TokenBucketRateLimiter(capacity=30, rate_limit=30)
 
 
     def apply_rules(self) -> None:

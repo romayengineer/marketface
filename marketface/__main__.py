@@ -58,7 +58,7 @@ def main() -> None:
             context=context,
             credentials=LoginCredentials(username=email, password=password),
         )
-        facebook.login(timeout_ms=10000)
+        facebook.login(timeout_ms=15000)
         # TODO
         # 1. pull the data for the remaining articles links left on the db
         #    before pulling new ones
