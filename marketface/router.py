@@ -32,7 +32,7 @@ class TokenBucketRateLimiter(RateLimiter):
 
     def __init__(self, capacity: int) -> None:
         self.capacity = capacity # constant
-        self.tokens = capacity
+        self.tokens = 0
         self.last_refill_time = time.perf_counter()
         self.lock = threading.Lock()
 
