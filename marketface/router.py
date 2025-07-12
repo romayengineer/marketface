@@ -38,6 +38,8 @@ class TokenBucketRateLimiter(RateLimiter):
     def __init__(self, capacity: float, rate_limit: float) -> None:
         self.capacity = capacity # constant
         self.rate_limit = rate_limit # constant
+        if self.rate_limit <= 0 or self.capacity <= 0:
+            raise ValueError("Rate limit and capacity have to be > 0")
         if self.rate_limit > self.capacity:
             raise ValueError("Rate limit exceeds bucket capacity")
         self.tokens = capacity
