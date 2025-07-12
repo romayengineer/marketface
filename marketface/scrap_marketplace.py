@@ -20,6 +20,7 @@ from marketface.play_dynamic import open_new_page
 from marketface.utils import shorten_item_url
 from marketface.creds import read_creds
 from marketface.logger import getLogger
+from marketface.router import route_rules
 
 
 logger = getLogger("marketface.scrap_marketplace")
@@ -56,51 +57,6 @@ if not email or not password:
 storage_state_file="/home/marketface/browser_context.json"
 
 
-def route_rules(context: BrowserContext) -> None:
-    # --- PERFORMANCE BOOST - THIS IS THE NEW CODE ---
-
-    # Define the types of resources we want to block to speed up loading.
-    # Common resource types: 'image', 'stylesheet', 'font', 'media', 'script'
-    # Be careful blocking 'script' as it can break website functionality.
-    blocked_resource_types = [
-      "image",
-      # whitout the stylesheets the selectors don't work
-      # and we cannot get the data from the site
-      # "stylesheet",
-      "font",
-      "media"
-    ]
-
-    # Define a list of domains to block (e.g., tracking, ads)
-    # This uses regular expressions for flexible matching.
-    blocked_domains = [
-        r"googletagmanager\.com",
-        r"google-analytics\.com",
-        r"doubleclick\.net"
-    ]
-
-    def handle_route(route: Route):
-        # Check if the request's resource type is in our blocked list
-        if route.request.resource_type in blocked_resource_types:
-            # print(f"🚫 Blocking [resource]: {route.request.url}")
-            return route.abort()
-
-        # Check if the request's URL matches any of our blocked domains
-        for domain in blocked_domains:
-            if re.search(domain, route.request.url):
-                # print(f"🚫 Blocking [domain]: {route.request.url}")
-                return route.abort()
-
-        # If the request is not blocked, let it continue
-        return route.continue_()
-
-    # Apply this routing rule to the entire browser context.
-    # The "**" is a glob pattern that matches all URLs.
-    context.route("**/*", handle_route)
-
-    print("🚀 Performance mode enabled: Blocking images, fonts, and stylesheets.")
-
-
 def interactive_save_browser_context(context: BrowserContext) -> None:
     """
     This is to refresh the session once is log out.
@@ -114,11 +70,12 @@ def interactive_save_browser_context(context: BrowserContext) -> None:
         time.sleep(10)
 
 
-def get_browser_context(p: Playwright) -> BrowserContext:
+def get_browser_context(p: Playwright, with_rules: bool = True) -> BrowserContext:
     browser: Browser = p.chromium.launch(headless=headless, slow_mo=200)
     print("New Browser")
     context: BrowserContext = browser.new_context(storage_state=storage_state_file)
-    route_rules(context)
+    if with_rules:
+        route_rules(context)
     print("New Context")
     return context
 
