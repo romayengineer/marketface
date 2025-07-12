@@ -2,6 +2,7 @@ import re
 import time
 import threading
 from abc import ABC, abstractmethod
+from urllib.parse import urlparse, ParseResult
 
 from marketface.logger import getLogger
 
@@ -91,21 +92,30 @@ class FacebookRouter(Router):
         # Define the types of resources we want to block to speed up loading.
         # Common resource types: 'image', 'stylesheet', 'font', 'media', 'script'
         # Be careful blocking 'script' as it can break website functionality.
-        self.blocked_resource_types = [
-            "image",
-            # whitout the stylesheets the selectors don't work
-            # and we cannot get the data from the site
-            # "stylesheet",
-            "font",
-            "media"
-        ]
+        #
+        ## most domains requested
+        # facebook.com
+        # fbcdn.net
+        # fbsbx.com
+        #
+        ## most resource types requested
+        # document
+        # ping
+        # stylesheet
+        # script
+        # other
+        # image
+        # xhr
+        # fetch
+        # media
+        self.blocked_resource_types = set(["image", "media", "ping"])
+        self.requested_resource_types = set()
+        self.counter_resource_types = dict()
         # Define a list of domains to block (e.g., tracking, ads)
         # This uses regular expressions for flexible matching.
-        self.blocked_domains = [
-            r"googletagmanager\.com",
-            r"google-analytics\.com",
-            r"doubleclick\.net"
-        ]
+        self.blocked_domains = set()
+        self.requested_domains = set()
+        self.counter_domains = dict()
         self.limiter = TokenBucketRateLimiter(capacity=30, rate_limit=30)
 
 
@@ -117,6 +127,8 @@ class FacebookRouter(Router):
 
 
     def handle_all_routes(self, route: Route) -> None:
+        url_parsed: ParseResult = urlparse(route.request.url)
+        hostname: str = str(url_parsed.hostname)
         # Check if the request's resource type is in our blocked list
         if route.request.resource_type in self.blocked_resource_types:
             # print(f"🚫 Blocking [resource]: {route.request.url}")
@@ -124,10 +136,17 @@ class FacebookRouter(Router):
 
         # Check if the request's URL matches any of our blocked domains
         for domain in self.blocked_domains:
-            if re.search(domain, route.request.url):
+            if re.search(domain, hostname):
                 # print(f"🚫 Blocking [domain]: {route.request.url}")
                 return route.abort()
         # apply rate limiting logic
         self.limiter.acquire(tokens_needed=1)
+        if hostname not in self.requested_domains:
+            logger.info("requested hostname: %s", hostname)
+        if route.request.resource_type not in self.requested_resource_types:
+            logger.info("requested resource type: %s", route.request.resource_type)
+        self.requested_domains.add(hostname)
+        self.requested_resource_types.add(route.request.resource_type)
+        logger.info("requested url: %s", route.request.url)
         # If the request is not blocked, let it continue
         return route.continue_()
