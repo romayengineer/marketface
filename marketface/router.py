@@ -126,6 +126,12 @@ class FacebookRouter(Router):
         return 100 * (1 - self.counter_requested_allowed / self.counter_requested_all)
 
 
+    def is_domain_allowed(self, hostname: str) -> bool:
+        return any(
+            hostname.endswith(domain) for domain in self.allowed_domains
+        )
+
+
     def handle_all_routes(self, route: Route) -> None:
         # self.counter_requested_all += 1
 
@@ -138,12 +144,7 @@ class FacebookRouter(Router):
             return route.abort()
 
         # block request if domains not allowed
-        domain_allowed = False
-        for domain in self.allowed_domains:
-            if hostname.endswith(domain):
-                domain_allowed = True
-                break
-        if not domain_allowed:
+        if not self.is_domain_allowed(hostname):
             logger.debug("🚫 Blocking [domain]: %s", route.request.url)
             return route.abort()
 
