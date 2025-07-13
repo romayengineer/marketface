@@ -95,6 +95,9 @@ class FacebookRouter(Router):
         self.allowed_resource_types = {"document", "script", "fetch", "xhr", "other"}
         # Define a list of domains to allow
         self.allowed_domains = ["fbcdn.net", "facebook.com", "fbsbx.com"]
+        # counters
+        self.counter_requested_all = 0
+        self.counter_requested_allowed = 0
         self.limiter = TokenBucketRateLimiter(capacity=30, rate_limit=30)
 
 
@@ -119,7 +122,13 @@ class FacebookRouter(Router):
         return path_extension != ".js"
 
 
+    def calculate_blocked_percentage(self) -> float:
+        return 100 * (1 - self.counter_requested_allowed / self.counter_requested_all)
+
+
     def handle_all_routes(self, route: Route) -> None:
+        # self.counter_requested_all += 1
+
         url_parsed: ParseResult = urlparse(route.request.url)
         hostname: str = url_parsed.hostname or ""
 
@@ -146,6 +155,14 @@ class FacebookRouter(Router):
 
         # apply rate limiting logic
         self.limiter.acquire(tokens_needed=1)
+
+        # self.counter_requested_allowed += 1
+
+        # uncomment this for debugging
+        # after testing these rules block around 50% of requests
+        # block_percentage = self.calculate_blocked_percentage()
+        # logger.info("request blocked percentage: %.2f%%", block_percentage)
+
 
         # If the request is not blocked and request rate is within limits let it continue
         return route.continue_()
