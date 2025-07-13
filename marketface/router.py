@@ -2,6 +2,8 @@ import re
 import time
 import threading
 from abc import ABC, abstractmethod
+
+from typing import Optional
 from urllib.parse import urlparse, ParseResult
 
 from marketface.logger import getLogger
@@ -89,33 +91,10 @@ class FacebookRouter(Router):
 
     def __init__(self, context: BrowserContext) -> None:
         self.context = context
-        # Define the types of resources we want to block to speed up loading.
-        # Common resource types: 'image', 'stylesheet', 'font', 'media', 'script'
-        # Be careful blocking 'script' as it can break website functionality.
-        #
-        ## most domains requested
-        # facebook.com
-        # fbcdn.net
-        # fbsbx.com
-        #
-        ## most resource types requested
-        # document
-        # ping
-        # stylesheet
-        # script
-        # other
-        # image
-        # xhr
-        # fetch
-        # media
-        self.blocked_resource_types = set(["image", "media", "ping"])
-        self.requested_resource_types = set()
-        self.counter_resource_types = dict()
-        # Define a list of domains to block (e.g., tracking, ads)
-        # This uses regular expressions for flexible matching.
-        self.blocked_domains = set()
-        self.requested_domains = set()
-        self.counter_domains = dict()
+        # Define a set of resource types to allow
+        self.allowed_resource_types = {"document", "script", "fetch", "xhr", "other"}
+        # Define a list of domains to allow
+        self.allowed_domains = ["fbcdn.net", "facebook.com", "fbsbx.com"]
         self.limiter = TokenBucketRateLimiter(capacity=30, rate_limit=30)
 
 
@@ -126,27 +105,47 @@ class FacebookRouter(Router):
         print("🚀 Performance mode enabled: Blocking images, fonts, and stylesheets.")
 
 
+    def get_path_extension(self, url_parsed: ParseResult) -> Optional[str]:
+        match = re.search(r"\.[a-z0-9]{1,5}$", url_parsed.path)
+        if match:
+            return match.group()
+
+
+    def is_extension_not_required(self, path_extension: str) -> bool:
+        return path_extension in {".mp4", ".css", ".ico", ".kf", ".wasm"}
+
+
+    def is_extension_not_js(self, path_extension: str) -> bool:
+        return path_extension != ".js"
+
+
     def handle_all_routes(self, route: Route) -> None:
         url_parsed: ParseResult = urlparse(route.request.url)
-        hostname: str = str(url_parsed.hostname)
-        # Check if the request's resource type is in our blocked list
-        if route.request.resource_type in self.blocked_resource_types:
-            # print(f"🚫 Blocking [resource]: {route.request.url}")
+        hostname: str = url_parsed.hostname or ""
+
+        # block request if resource types not allowed
+        if route.request.resource_type not in self.allowed_resource_types:
+            logger.debug("🚫 Blocking [resource]: %s", route.request.url)
             return route.abort()
 
-        # Check if the request's URL matches any of our blocked domains
-        for domain in self.blocked_domains:
-            if re.search(domain, hostname):
-                # print(f"🚫 Blocking [domain]: {route.request.url}")
-                return route.abort()
+        # block request if domains not allowed
+        domain_allowed = False
+        for domain in self.allowed_domains:
+            if hostname.endswith(domain):
+                domain_allowed = True
+                break
+        if not domain_allowed:
+            logger.debug("🚫 Blocking [domain]: %s", route.request.url)
+            return route.abort()
+
+        # block request if path has extension and does not end in .js
+        path_extension = self.get_path_extension(url_parsed)
+        if path_extension and self.is_extension_not_js(path_extension):
+            logger.debug("🚫 Blocking [path]: %s", url_parsed.path)
+            return route.abort()
+
         # apply rate limiting logic
         self.limiter.acquire(tokens_needed=1)
-        if hostname not in self.requested_domains:
-            logger.info("requested hostname: %s", hostname)
-        if route.request.resource_type not in self.requested_resource_types:
-            logger.info("requested resource type: %s", route.request.resource_type)
-        self.requested_domains.add(hostname)
-        self.requested_resource_types.add(route.request.resource_type)
-        logger.info("requested url: %s", route.request.url)
-        # If the request is not blocked, let it continue
+
+        # If the request is not blocked and request rate is within limits let it continue
         return route.continue_()
