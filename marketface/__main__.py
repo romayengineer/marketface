@@ -1,9 +1,11 @@
 import sys
 sys.path.insert(0, "/home/marketface")
 
-from typing import List
+import time
 
-from playwright.sync_api import sync_playwright
+from typing import List, cast
+
+from playwright.sync_api import sync_playwright, Page
 
 from marketface import database
 from marketface.play_dynamic import page_of_items, create_item
@@ -14,6 +16,31 @@ from marketface.logger import getLogger
 
 
 logger = getLogger("marketface.__main__")
+
+
+def pull_articles(facebook: FacebookPage) -> None:
+    for db_item in page_of_items():
+        try:
+            item = facebook.market_item(
+                db_item.url
+            ).market_details()
+            valid = True
+            if item:
+                item.log()
+                if not item.title or not item.priceValid:
+                    logger.error("item details error on data: '%s' '%s' '%s' '%s'", db_item.id, db_item.url, item.title, item.price)
+                    valid = False
+            else:
+                logger.error("item details error on item is None: '%s' '%s'", db_item.id, db_item.url)
+                valid = False
+            if item and valid:
+                database.update_item_by_id(db_item.id, item.to_dict())
+                logger.info("item details updated: '%s' '%s'", db_item.id, db_item.url)
+            else:
+                logger.warning("item details deleting: '%s' '%s'", db_item.id, db_item.url)
+                database.update_item_deleted_id(db_item.id)
+        except Exception as err:
+            logger.error("item details error on details: %s", err)
 
 
 def main() -> None:
@@ -63,46 +90,46 @@ def main() -> None:
         # 1. pull the data for the remaining articles links left on the db
         #    before pulling new ones
         # pull_articles(page, context)
-        for db_item in page_of_items():
-            try:
-                item = facebook.market_item(
-                    db_item.url
-                ).market_details()
-                valid = True
-                if item:
-                    item.log()
-                    if not item.title or not item.priceValid:
-                        logger.error("item details error on data: '%s' '%s' '%s' '%s'", db_item.id, db_item.url, item.title, item.price)
-                        valid = False
-                else:
-                    logger.error("item details error on item is None: '%s' '%s'", db_item.id, db_item.url)
-                    valid = False
-                if item and valid:
-                    database.update_item_by_id(db_item.id, item.to_dict())
-                    logger.info("item details updated: '%s' '%s'", db_item.id, db_item.url)
-                else:
-                    logger.warning("item details deleting: '%s' '%s'", db_item.id, db_item.url)
-                    database.update_item_deleted_id(db_item.id)
-            except Exception as err:
-                logger.error("item details error on details: %s", err)
+        pull_articles(facebook)
         # 2. pull for new articles links
         for query in queries:
             logger.info("searching with query '%s'", query)
             try:
-                # TODO scroll down to get all items in search page
-                # page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
                 market_page = facebook.market_search(
                     query=query
                 )
                 if not market_page.valid_page:
                     logger.warning("invalid page '%s'", query)
-                for href in facebook.get_market_href():
+                links_processed_in_search = set()
+                links_counter_old = -1
+                links_counter_new = 0
+                max_tries = 10
+                while True:
+                    if links_counter_old < links_counter_new:
+                        tries = 1
+                    else:
+                        tries += 1
+                    if tries >= max_tries + 1:
+                        break
+                    links_counter_old = links_counter_new
                     try:
-                        model = create_item(href)
-                        if model:
-                            logger.info("item search created: '%s' '%s'", query, href)
+                        for href in facebook.get_market_href():
+                            if href in links_processed_in_search:
+                                continue
+                            links_processed_in_search.add(href)
+                            links_counter_new += 1
+                            try:
+                                model = create_item(href)
+                                if model:
+                                    logger.info("item search created: '%s' '%s'", query, href)
+                            except Exception as err:
+                                logger.error("item search error on create '%s' '%s': %s", query, href, err)
                     except Exception as err:
-                        logger.error("item search error on create '%s' '%s': %s", query, href, err)
+                        logger.error("item search error on get href '%s': %s", query, err)
+                    # page is defined
+                    logger.info("scroll down %s %s %s", tries, links_counter_old, links_counter_new)
+                    cast(Page, facebook.current_page).evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                    time.sleep(1)
                 # 3. save all new articles links from search page
                 # collect_articles_all(page)
                 # 4. pull the data from each of the new articles links

@@ -92,7 +92,7 @@ class FacebookRouter(Router):
     def __init__(self, context: BrowserContext) -> None:
         self.context = context
         # Define a set of resource types to allow
-        self.allowed_resource_types = {"document", "script", "fetch", "xhr", "other"}
+        self.allowed_resource_types = {"document", "script", "fetch", "xhr", "stylesheet", "other"}
         # Define a list of domains to allow
         self.allowed_domains = ["fbcdn.net", "facebook.com", "fbsbx.com"]
         # counters
@@ -115,7 +115,7 @@ class FacebookRouter(Router):
 
 
     def is_extension_not_required(self, path_extension: str) -> bool:
-        return path_extension in {".mp4", ".css", ".ico", ".kf", ".wasm"}
+        return path_extension not in {".js", ".css"}
 
 
     def is_extension_not_js(self, path_extension: str) -> bool:
@@ -150,7 +150,7 @@ class FacebookRouter(Router):
 
         # block request if path has extension and does not end in .js
         path_extension = self.get_path_extension(url_parsed)
-        if path_extension and self.is_extension_not_js(path_extension):
+        if path_extension and self.is_extension_not_required(path_extension):
             logger.debug("🚫 Blocking [path]: %s", url_parsed.path)
             return route.abort()
 
