@@ -43,8 +43,60 @@ def pull_articles(facebook: FacebookPage) -> None:
             logger.error("item details error on details: %s", err)
 
 
+def get_items_from_searches(facebook: FacebookPage, queries: List[str]) -> bool:
+    for query in queries:
+        logger.info("searching with query '%s'", query)
+        try:
+            market_page = facebook.market_search(
+                query=query
+            )
+            if not market_page.valid_page:
+                logger.warning("invalid page '%s'", query)
+            links_processed_in_search = set()
+            links_counter_old = -1
+            links_counter_new = 0
+            max_tries = 10
+            while True:
+                if links_counter_old < links_counter_new:
+                    tries = 1
+                else:
+                    tries += 1
+                if tries >= max_tries + 1:
+                    break
+                links_counter_old = links_counter_new
+                try:
+                    for href in facebook.get_market_href():
+                        if href in links_processed_in_search:
+                            continue
+                        links_processed_in_search.add(href)
+                        links_counter_new += 1
+                        try:
+                            model = create_item(href)
+                            if model:
+                                logger.info("item search created: '%s' '%s'", query, href)
+                        except Exception as err:
+                            logger.error("item search error on create '%s' '%s': %s", query, href, err)
+                except Exception as err:
+                    logger.error("item search error on get href '%s': %s", query, err)
+                # page is defined
+                logger.info("scroll down %s %s %s", tries, links_counter_old, links_counter_new)
+                cast(Page, facebook.current_page).evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                time.sleep(1)
+            # 3. save all new articles links from search page
+            # collect_articles_all(page)
+            # 4. pull the data from each of the new articles links
+            # pull_articles(page, context)
+        except PageBlocked as err:
+            logger.error(err)
+            # exit_with_error = True
+            return False
+        except Exception as err:
+            logger.error("item search error on search '%s': %s", query, err)
+    return True
+
+
 def main() -> None:
-    exit_with_error = False
+    exit_success = True
     queries: List[str] = [
         # build search url for moto honda wave
         "moto honda",
@@ -92,58 +144,11 @@ def main() -> None:
         # pull_articles(page, context)
         pull_articles(facebook)
         # 2. pull for new articles links
-        for query in queries:
-            logger.info("searching with query '%s'", query)
-            try:
-                market_page = facebook.market_search(
-                    query=query
-                )
-                if not market_page.valid_page:
-                    logger.warning("invalid page '%s'", query)
-                links_processed_in_search = set()
-                links_counter_old = -1
-                links_counter_new = 0
-                max_tries = 10
-                while True:
-                    if links_counter_old < links_counter_new:
-                        tries = 1
-                    else:
-                        tries += 1
-                    if tries >= max_tries + 1:
-                        break
-                    links_counter_old = links_counter_new
-                    try:
-                        for href in facebook.get_market_href():
-                            if href in links_processed_in_search:
-                                continue
-                            links_processed_in_search.add(href)
-                            links_counter_new += 1
-                            try:
-                                model = create_item(href)
-                                if model:
-                                    logger.info("item search created: '%s' '%s'", query, href)
-                            except Exception as err:
-                                logger.error("item search error on create '%s' '%s': %s", query, href, err)
-                    except Exception as err:
-                        logger.error("item search error on get href '%s': %s", query, err)
-                    # page is defined
-                    logger.info("scroll down %s %s %s", tries, links_counter_old, links_counter_new)
-                    cast(Page, facebook.current_page).evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                    time.sleep(1)
-                # 3. save all new articles links from search page
-                # collect_articles_all(page)
-                # 4. pull the data from each of the new articles links
-                # pull_articles(page, context)
-            except PageBlocked as err:
-                logger.error(err)
-                exit_with_error = True
-                break
-            except Exception as err:
-                logger.error("item search error on search '%s': %s", query, err)
-        if exit_with_error:
-            logger.error("main completed with an error")
-        else:
+        exit_success = get_items_from_searches(facebook, queries)
+        if exit_success:
             logger.info("main completed successfully")
+        else:
+            logger.error("main completed with an error")
 
 if __name__ == "__main__":
     main()
