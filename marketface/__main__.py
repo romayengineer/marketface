@@ -46,6 +46,7 @@ def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, 
             links_counter_old = -1
             links_counter_new = 0
             max_tries = 6
+            tries = 1
             while True:
                 if links_counter_old < links_counter_new:
                     tries = 1
@@ -59,13 +60,13 @@ def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, 
                 if tries >= max_tries + 1:
                     break
                 links_counter_old = links_counter_new
-                with skip(url_not_unique):
-                    for href in facebook.get_market_href():
-                        if href in links_processed_in_search:
-                            continue
-                        links_processed_in_search.add(href)
-                        links_counter_new += 1
-                        item = items.Item.model_validate({"url": href})
+                for href in facebook.get_market_href():
+                    if href in links_processed_in_search:
+                        continue
+                    links_processed_in_search.add(href)
+                    links_counter_new += 1
+                    item = items.Item.model_validate({"url": href})
+                    with skip(url_not_unique):
                         items_repo.create(item)
                 cast(Page, facebook.current_page).evaluate(
                     "window.scrollTo(0, document.body.scrollHeight)"
