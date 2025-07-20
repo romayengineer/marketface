@@ -244,25 +244,6 @@ def get_item_page_details(url: str, page: Page) -> bool:
     return database.update_item_by_url(url, item.to_dict())
 
 
-def page_of_items(pages: int = 1000, interactive: bool = False) -> Iterator:
-    page = 1
-    while True:
-        logger.info("requesting page of items %s", page)
-        items = database.get_items_incomplete(page, pages).items
-        if not items:
-            break
-        for item in items:
-            # filter deleted elements
-            if item.deleted:
-                continue
-            yield item
-        if interactive:
-            inp = input("Continue? (Y/n): ")
-            if inp not in ["y", ""]:
-                break
-        page += 1
-
-
 def open_new_page(context: BrowserContext, timeout: Optional[int] = timeout_ms) -> Page:
     timeout = timeout or timeout_ms
     page: Page = context.new_page()

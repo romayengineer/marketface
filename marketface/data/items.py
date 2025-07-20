@@ -1,6 +1,7 @@
+import json
+from datetime import datetime
 from typing import Type, Optional, Iterator, Dict, Union, get_origin, get_args
 
-import json
 from pydantic import BaseModel
 from pydantic.fields import Field, FieldInfo
 from pocketbase import PocketBase
@@ -16,19 +17,24 @@ logger = getLogger("marketface.data.items")
 
 
 class PocketBaseModel(BaseModel):
-    id: str
-    created: str
-    updated: str
+    """
+    Pocketbase handles this on its own
+    """
+
+    id: Optional[str] = Field(None)
+    created: Optional[datetime] = Field(None)
+    updated: Optional[datetime] = Field(None)
 
 
 class Item(PocketBaseModel):
-    url: str
+    url: Optional[str] = Field(None)
     title: Optional[str] = Field(None)
     description: Optional[str] = Field(None)
+    priceStr: Optional[str] = Field(None)
+    priceUsd: Optional[float] = Field(0.0)
+    priceArs: Optional[float] = Field(0.0)
+    usdArsRate: float = Field(1230.00)
     img_path: Optional[str] = Field(None)
-    price_usd: Optional[float] = Field(None)
-    price_ars: Optional[float] = Field(None)
-    usd_ars_rate: Optional[float] = Field(None)
     usd: Optional[bool] = Field(False)
     deleted: Optional[bool] = Field(False)
     reviewed: Optional[bool] = Field(False)
@@ -36,6 +42,11 @@ class Item(PocketBaseModel):
 
     class Config:
         from_attributes = True
+
+    def log(self):
+        for field_name in Item.model_fields:
+            logger.info("%s: %s", field_name, getattr(self, field_name))
+
 
 
 class BaseRepo:
@@ -52,21 +63,19 @@ class BaseRepo:
         self.collection_name: str = collection_name
         self.collection: RecordService = self.client.collection(self.collection_name)
 
-    def _validate(self, data) -> Optional[Item]:
-        if not data:
-            return None
+    def _validate(self, data) -> Item:
         return Item.model_validate(data)
 
-    def first(self, query: str) -> Optional[Item]:
+    def first(self, query: str) -> Item:
         record = self.collection.get_first_list_item(query)
         return self._validate(record)
 
-    def list(self, start: int, count: int, params: Optional[Dict] = None) -> Iterator[Optional[Item]]:
+    def list(self, start: int, count: int, params: Optional[Dict] = None) -> Iterator[Item]:
         records = self.collection.get_list(start, count, params or {}).items
         for record in records:
             yield self._validate(record)
 
-    def all(self, params: Optional[Dict] = None) -> Iterator[Optional[Item]]:
+    def all(self, params: Optional[Dict] = None) -> Iterator[Item]:
         page = 1
         while True:
             items = self.list(page, 100, params)
@@ -76,15 +85,21 @@ class BaseRepo:
                 yield self._validate(item)
             page += 1
 
-    def update(self, item: Item) -> Optional[Item]:
-        record = self.collection.update(item.id, item.model_dump())
+    def update(self, item: Item) -> Item:
+        if not item.id:
+            raise ValueError("id is required")
+        record = self.collection.update(
+            item.id,
+            item.model_dump(
+                exclude={"id", "created", "updated"},
+            ),
+        )
         return self._validate(record)
 
-    def create(self, data: Dict) -> Optional[Item]:
+    def create(self, data) -> Item:
         item = self._validate(data)
-        if not item:
-            return None
-        self.collection.create(item.model_dump())
+        response = self.collection.create(item.model_dump())
+        return self._validate(response)
 
     def table_exists(self) -> Optional[PocketBaseBaseModel]:
         try:
@@ -156,7 +171,7 @@ class BaseRepo:
             "schema": collection_schema,
         }
 
-        logger.info("collection_data:\n %s", json.dumps(collection_data, indent=4))
+        # logger.info("collection_data:\n %s", json.dumps(collection_data, indent=4))
 
         collections: CollectionService = self.client.collections
         return collections.create(body_params=collection_data)
@@ -167,14 +182,15 @@ class ItemRepo(BaseRepo):
     def __init__(self, client: PocketBase) -> None:
         self.setup(client, "items")
 
-    def get_by_url(self, url: str) -> Optional[Item]:
+    def get_by_url(self, url: str) -> Item:
         return self.first(f'url = "{url}"')
 
-    def get_incomplete(self) -> Iterator[Optional[Item]]:
-        yield from self.all({"filter": "title = ''"})
+    def get_incomplete(self) -> Iterator[Item]:
+        yield from self.all({"filter": "title = '' && deleted = false"})
 
-    def set_deleted(self, item: Item) -> Optional[Item]:
+    def set_deleted(self, item: Item) -> Item:
         item.deleted = True
+        logger.warning("setting item to deleted %s", item.url)
         return self.update(item)
 
     def create_table(self) -> Optional[PocketBaseBaseModel]:

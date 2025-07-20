@@ -2,9 +2,11 @@ import sys
 sys.path.insert(0, "/home/marketface")
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Iterator, Any
+from typing import Optional, Dict, Iterator
 from urllib.parse import urlencode
 
+
+from marketface.data.items import Item
 from marketface.logger import getLogger
 
 from playwright.sync_api import TimeoutError, BrowserContext, Page, Locator
@@ -48,37 +50,6 @@ class PageInvalid(Exception):
 
 class PageBlocked(PageInvalid):
     pass
-
-
-class ItemDetails:
-
-    def __init__(self):
-        self.title = ""
-        self.description = ""
-        self.priceStr = ""
-        self.price = ""  # price without currency
-        self.priceArs = 0.0  # price in Argentinian Pesos
-        self.priceUsd = 0.0  # price in Dollars
-        self.usdArsRate = 1230.00
-        self.priceValid = False
-        self.isUsd = False
-        self.deleted = False
-
-    def log(self) -> None:
-        for k, v in self.to_dict().items():
-            logger.info(f"{k.ljust(20)}: {v}")
-
-    def to_dict(self) -> Dict[str, Any]:
-        return {
-            "deleted": self.deleted,
-            "title": self.title,
-            "description": self.description,
-            "priceStr": self.priceStr,
-            "priceArs": self.priceArs,
-            "priceUsd": self.priceUsd,
-            "usd": self.isUsd,
-            "usdArsRate": self.usdArsRate,
-        }
 
 
 def drop_leading_nondigits(priceStr: str) -> str:
@@ -374,11 +345,11 @@ class FacebookPage(WebPage):
         page.goto(item_url)
         return self
 
-    def market_details(self, page: Optional[Page] = None) -> Optional[ItemDetails]:
+    def market_details(self, page: Optional[Page] = None) -> Optional[Item]:
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
-        item = ItemDetails()
+        item = Item.model_validate({})
         body = str(page.locator(xbody).text_content())
         invalid_strs = [
             "Esta publicación ya no",
@@ -405,12 +376,11 @@ class FacebookPage(WebPage):
         if price < 10000:
             item.priceUsd = price
             item.priceArs = round(price * item.usdArsRate, 2)
-            item.isUsd = True
+            item.usd = True
         else:
             item.priceUsd = round(price / item.usdArsRate, 2)
             item.priceArs = price
-            item.isUsd = False
-        item.priceValid = True
+            item.usd = False
         return item
 
 

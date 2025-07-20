@@ -8,38 +8,62 @@ from typing import List, cast
 from playwright.sync_api import sync_playwright, Page
 
 from marketface.data import backend, items
-from marketface.play_dynamic import page_of_items, create_item
+from marketface.play_dynamic import create_item
 from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
 from marketface.page.facebook import FacebookPage, LoginCredentials, PageBlocked
 from marketface.logger import getLogger
 
+from pocketbase.utils import ClientResponseError
+
 
 logger = getLogger("marketface.__main__")
 
 
-def pull_articles(facebook: FacebookPage) -> None:
-    for db_item in page_of_items():
+def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
+    for db_item in items_repo.get_incomplete():
         try:
+            if db_item.url is None:
+                continue
             item = facebook.market_item(
                 db_item.url
             ).market_details()
             valid = True
             if item:
-                item.log()
-                if not item.title or not item.priceValid:
+                if not item.title:
                     logger.error("item details error on data: '%s' '%s' '%s' '%s'", db_item.id, db_item.url, item.title, item.price)
                     valid = False
             else:
                 logger.error("item details error on item is None: '%s' '%s'", db_item.id, db_item.url)
                 valid = False
-            if item and valid:
-                database.update_item_by_id(db_item.id, item.to_dict())
+            if item:
+                db_item.title = item.title
+                db_item.priceStr = item.priceStr
+                db_item.description = item.description
+                db_item.priceUsd = item.priceUsd
+                db_item.priceArs = item.priceArs
+                db_item.usd = item.usd
+                db_item.log()
+            if valid:
+                db_item.deleted = False
+                items_repo.update(db_item)
+                # database.update_item_by_id(db_item.id, item.to_dict())
                 logger.info("item details updated: '%s' '%s'", db_item.id, db_item.url)
             else:
+                db_item.deleted = True
+                items_repo.update(db_item)
+                # database.update_item_deleted_id(db_item.id)
                 logger.warning("item details deleting: '%s' '%s'", db_item.id, db_item.url)
-                database.update_item_deleted_id(db_item.id)
+        except ClientResponseError as err:
+            if err.status == 400:
+                code = err.data.get("data", {}).get("description", {}).get("code")
+                error_code = "validation_max_text_constraint"
+                if code == error_code:
+                    logger.warning(error_code)
+                    continue
+            logger.error("item details error on details: %s", err)
         except Exception as err:
+            # import pdb; pdb.set_trace()
             logger.error("item details error on details: %s", err)
 
 
@@ -134,7 +158,7 @@ def main() -> None:
     client = backend.auth()
     items_repo = items.ItemRepo(client)
     items_repo.create_table()
-    sys.exit(0)
+    # sys.exit(0)
     with sync_playwright() as p:
         context = get_browser_context(p)
         facebook = FacebookPage(
@@ -146,7 +170,7 @@ def main() -> None:
         # 1. pull the data for the remaining articles links left on the db
         #    before pulling new ones
         # pull_articles(page, context)
-        pull_articles(facebook)
+        pull_articles(items_repo, facebook)
         # 2. pull for new articles links
         exit_success = get_items_from_searches(facebook, queries)
         if exit_success:
