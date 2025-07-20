@@ -32,7 +32,7 @@ class Router(ABC):
 class RateLimiter(ABC):
 
     @abstractmethod
-    def acquire(self) -> None:
+    def acquire(self, tokens_needed: int) -> None:
         ...
 
 
