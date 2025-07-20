@@ -335,12 +335,15 @@ class FacebookPage(WebPage):
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
+        item_url = ""
         if not item_id_or_url:
             raise ValueError("item_id_or_url is required")
         elif item_id_or_url.isdigit():
             item_url = f"{self.host}/marketplace/item/{item_id_or_url}"
         elif item_id_or_url.startswith("https") and "/marketplace/item/" in item_id_or_url:
             item_url = item_id_or_url
+        else:
+            raise ValueError(f"item_id_or_url is invalid: {item_id_or_url}")
         self.logger.info("goto: %s", item_url)
         page.goto(item_url)
         return self
