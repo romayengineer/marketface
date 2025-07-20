@@ -25,25 +25,16 @@ def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
         try:
             if db_item.url is None:
                 continue
-            item = facebook.market_item(
-                db_item.url
-            ).market_details()
+            facebook.market_item(
+                db_item.url,
+            ).market_details(
+                item=db_item,
+            )
             valid = True
-            if item:
-                if not item.title:
-                    logger.error("item details error on data: '%s' '%s' '%s' '%s'", db_item.id, db_item.url, item.title, item.price)
-                    valid = False
-            else:
-                logger.error("item details error on item is None: '%s' '%s'", db_item.id, db_item.url)
+            if not db_item.title:
+                logger.error("item details error on data: '%s' '%s' '%s' '%s'", db_item.id, db_item.url, item.title, item.price)
                 valid = False
-            if item:
-                db_item.title = item.title
-                db_item.priceStr = item.priceStr
-                db_item.description = item.description
-                db_item.priceUsd = item.priceUsd
-                db_item.priceArs = item.priceArs
-                db_item.usd = item.usd
-                db_item.log()
+            db_item.log()
             if valid:
                 db_item.deleted = False
                 items_repo.update(db_item)
@@ -51,7 +42,7 @@ def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
                 logger.info("item details updated: '%s' '%s'", db_item.id, db_item.url)
             else:
                 db_item.deleted = True
-                items_repo.update(db_item)
+                items_repo.set_deleted(db_item)
                 # database.update_item_deleted_id(db_item.id)
                 logger.warning("item details deleting: '%s' '%s'", db_item.id, db_item.url)
         except ClientResponseError as err:

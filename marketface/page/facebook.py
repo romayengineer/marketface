@@ -345,11 +345,11 @@ class FacebookPage(WebPage):
         page.goto(item_url)
         return self
 
-    def market_details(self, page: Optional[Page] = None) -> Optional[Item]:
+    def market_details(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Optional[Item]:
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
-        item = Item.model_validate({})
+        item = item or Item.model_validate({})
         body = str(page.locator(xbody).text_content())
         invalid_strs = [
             "Esta publicación ya no",
