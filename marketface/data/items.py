@@ -74,12 +74,12 @@ class ItemRepo(BaseRepo):
     def __init__(self, client: PocketBase) -> None:
         self.setup(client, "items")
 
-    def by_url(self, url: str) -> Optional[Item]:
+    def get_by_url(self, url: str) -> Optional[Item]:
         return self.first(f'url = "{url}"')
 
-    def incomplete(self) -> Iterator[Optional[Item]]:
+    def get_incomplete(self) -> Iterator[Optional[Item]]:
         yield from self.all({"filter": "title = ''"})
 
-    def mark_deleted(self, item: Item) -> Optional[Item]:
+    def set_deleted(self, item: Item) -> Optional[Item]:
         item.deleted = True
         return self.update(item)
