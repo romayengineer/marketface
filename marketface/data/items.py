@@ -1,4 +1,4 @@
-from typing import Optional, Iterator, Dict, Union, get_origin, get_args
+from typing import Type, Optional, Iterator, Dict, Union, get_origin, get_args
 
 from pydantic import BaseModel
 from pydantic.fields import Field, FieldInfo
@@ -109,24 +109,7 @@ class BaseRepo:
 
         return pb_type
 
-
-
-class ItemRepo(BaseRepo):
-
-    def __init__(self, client: PocketBase) -> None:
-        self.setup(client, "items")
-
-    def get_by_url(self, url: str) -> Optional[Item]:
-        return self.first(f'url = "{url}"')
-
-    def get_incomplete(self) -> Iterator[Optional[Item]]:
-        yield from self.all({"filter": "title = ''"})
-
-    def set_deleted(self, item: Item) -> Optional[Item]:
-        item.deleted = True
-        return self.update(item)
-
-    def create_table(self) -> Optional[Collection]:
+    def _create_table(self, table: Type[PocketBaseModel]) -> Optional[Collection]:
 
         if self.table_exists():
             logger.info(
@@ -143,7 +126,7 @@ class ItemRepo(BaseRepo):
         collection_schema = []
 
         # TODO iterate over each field in Item model
-        for field_name, field_info in Item.model_fields.items():
+        for field_name, field_info in table.model_fields.items():
             # Exclude fields from the base model (id, created, updated) as
             # PocketBase manages them automatically.
             if field_name in PocketBaseModel.model_fields:
@@ -167,3 +150,22 @@ class ItemRepo(BaseRepo):
 
         collections: CollectionService = self.client.collections
         return collections.create(collection_data)
+
+
+class ItemRepo(BaseRepo):
+
+    def __init__(self, client: PocketBase) -> None:
+        self.setup(client, "items")
+
+    def get_by_url(self, url: str) -> Optional[Item]:
+        return self.first(f'url = "{url}"')
+
+    def get_incomplete(self) -> Iterator[Optional[Item]]:
+        yield from self.all({"filter": "title = ''"})
+
+    def set_deleted(self, item: Item) -> Optional[Item]:
+        item.deleted = True
+        return self.update(item)
+
+    def create_table(self) -> Optional[Collection]:
+        return self._create_table(Item)
