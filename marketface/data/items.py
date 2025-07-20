@@ -1,12 +1,16 @@
 from typing import Type, Optional, Iterator, Dict, Union, get_origin, get_args
 
+import json
 from pydantic import BaseModel
 from pydantic.fields import Field, FieldInfo
 from pocketbase import PocketBase
 from pocketbase.services.record_service import RecordService
 from pocketbase.services.collection_service import CollectionService
 from pocketbase.models.collection import Collection
+# 0.15.0
 from pocketbase.errors import ClientResponseError
+# 0.12.3
+# from pocketbase.utils import ClientResponseError
 
 from marketface.logger import getLogger
 
@@ -138,8 +142,8 @@ class BaseRepo:
                 "name": field_info.alias or field_name,
                 "type": pb_type,
                 "required": field_info.is_required(),
-                "unique": False, # TODO
-                "options": {} # TODO
+                # "unique": False, # TODO
+                # "options": {} # TODO
             })
 
         collection_data = {
@@ -148,8 +152,10 @@ class BaseRepo:
             "schema": collection_schema,
         }
 
+        logger.info("collection_data:\n %s", json.dumps(collection_data, indent=4))
+
         collections: CollectionService = self.client.collections
-        return collections.create(collection_data)
+        return collections.create(body_params=collection_data)
 
 
 class ItemRepo(BaseRepo):
