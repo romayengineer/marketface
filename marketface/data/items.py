@@ -6,11 +6,8 @@ from pydantic.fields import Field, FieldInfo
 from pocketbase import PocketBase
 from pocketbase.services.record_service import RecordService
 from pocketbase.services.collection_service import CollectionService
-from pocketbase.models.collection import Collection
-# 0.15.0
-from pocketbase.errors import ClientResponseError
-# 0.12.3
-# from pocketbase.utils import ClientResponseError
+from pocketbase.models.utils.base_model import BaseModel as PocketBaseBaseModel
+from pocketbase.utils import ClientResponseError
 
 from marketface.logger import getLogger
 
@@ -65,7 +62,7 @@ class BaseRepo:
         return self._validate(record)
 
     def list(self, start: int, count: int, params: Optional[Dict] = None) -> Iterator[Optional[Item]]:
-        records = self.collection.get_list(start, count, params).items
+        records = self.collection.get_list(start, count, params or {}).items
         for record in records:
             yield self._validate(record)
 
@@ -89,7 +86,7 @@ class BaseRepo:
             return None
         self.collection.create(item.model_dump())
 
-    def table_exists(self) -> Optional[Collection]:
+    def table_exists(self) -> Optional[PocketBaseBaseModel]:
         try:
             return self.client.collections.get_one(self.collection_name)
         except ClientResponseError as e:
@@ -113,7 +110,7 @@ class BaseRepo:
 
         return pb_type
 
-    def _create_table(self, table: Type[PocketBaseModel]) -> Optional[Collection]:
+    def _create_table(self, table: Type[PocketBaseModel]) -> Optional[PocketBaseBaseModel]:
 
         if self.table_exists():
             logger.info(
@@ -180,5 +177,5 @@ class ItemRepo(BaseRepo):
         item.deleted = True
         return self.update(item)
 
-    def create_table(self) -> Optional[Collection]:
+    def create_table(self) -> Optional[PocketBaseBaseModel]:
         return self._create_table(Item)

@@ -1,6 +1,6 @@
 import sys
 from pocketbase import PocketBase
-from pocketbase.errors import ClientResponseError
+from pocketbase.utils import ClientResponseError
 
 
 def auth() -> PocketBase:

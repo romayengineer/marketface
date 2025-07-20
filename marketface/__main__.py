@@ -7,7 +7,7 @@ from typing import List, cast
 
 from playwright.sync_api import sync_playwright, Page
 
-from marketface import database
+from marketface.data import backend, items
 from marketface.play_dynamic import page_of_items, create_item
 from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
@@ -131,6 +131,10 @@ def main() -> None:
     ]
     if not email or not password:
         raise ValueError(f"email and password are required for login")
+    client = backend.auth()
+    items_repo = items.ItemRepo(client)
+    items_repo.create_table()
+    sys.exit(0)
     with sync_playwright() as p:
         context = get_browser_context(p)
         facebook = FacebookPage(
