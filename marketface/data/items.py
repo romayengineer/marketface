@@ -103,7 +103,9 @@ class BaseRepo:
                 exclude={"id", "created", "updated"},
             ),
         )
-        return self._validate(response)
+        item = self._validate(response)
+        logger.info("item created %s", item.url)
+        return item
 
     def table_exists(self) -> Optional[PocketBaseBaseModel]:
         try:
