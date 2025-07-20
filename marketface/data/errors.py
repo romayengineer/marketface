@@ -29,6 +29,6 @@ def url_not_unique(err: ClientResponseError) -> bool:
         if not isinstance(code, str):
             return False
         if code == "validation_not_unique":
-            logger.info("item already exists")
+            logger.debug("item already exists")
             return True
     return False

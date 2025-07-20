@@ -75,8 +75,8 @@ def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, 
                 else:
                     tries += 1
                     logger.info(
-                        "scroll down %s %s %s",
-                        tries, links_counter_old, links_counter_new,
+                        "scroll down '%s' %s %s %s",
+                        query, tries, links_counter_old, links_counter_new,
                     )
                     time.sleep(5)
                 if tries >= max_tries + 1:

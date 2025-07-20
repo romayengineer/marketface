@@ -4,6 +4,8 @@ from logging import DEBUG, INFO, Logger
 from typing import Any
 
 
+logging.getLogger("httpx").setLevel(logging.WARNING)
+
 log_level = logging.INFO
 log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
 
