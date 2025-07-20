@@ -138,12 +138,19 @@ class BaseRepo:
 
             pb_type = self.get_pb_type(field_name, field_info)
 
+            options = {}
+            if pb_type == 'text':
+                # Example: Set a max length for text fields
+                options['max'] = 3000
+
             collection_schema.append({
                 "name": field_info.alias or field_name,
                 "type": pb_type,
                 "required": field_info.is_required(),
-                # "unique": False, # TODO
-                # "options": {} # TODO
+                "system": False,
+                "presentable": True,
+                "unique": False, # TODO
+                "options": options # TODO
             })
 
         collection_data = {
