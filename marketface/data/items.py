@@ -98,7 +98,11 @@ class BaseRepo:
 
     def create(self, data) -> Item:
         item = self._validate(data)
-        response = self.collection.create(item.model_dump())
+        response = self.collection.create(
+            item.model_dump(
+                exclude={"id", "created", "updated"},
+            ),
+        )
         return self._validate(response)
 
     def table_exists(self) -> Optional[PocketBaseBaseModel]:

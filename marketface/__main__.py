@@ -8,7 +8,7 @@ from typing import List, cast
 from playwright.sync_api import sync_playwright, Page
 
 from marketface.data import backend, items
-from marketface.play_dynamic import create_item
+from marketface.data.errors import skip, url_not_unique
 from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
 from marketface.page.facebook import FacebookPage, LoginCredentials, PageBlocked
@@ -58,7 +58,7 @@ def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
             logger.error("item details error on details: %s", err)
 
 
-def get_items_from_searches(facebook: FacebookPage, queries: List[str]) -> bool:
+def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, queries: List[str]) -> bool:
     for query in queries:
         logger.info("searching with query '%s'", query)
         try:
@@ -86,7 +86,9 @@ def get_items_from_searches(facebook: FacebookPage, queries: List[str]) -> bool:
                         links_processed_in_search.add(href)
                         links_counter_new += 1
                         try:
-                            model = create_item(href)
+                            with skip(url_not_unique):
+                                item = items.Item.model_validate({"url": href})
+                                model = items_repo.create(item)
                             if model:
                                 logger.info("item search created: '%s' '%s'", query, href)
                         except Exception as err:
@@ -149,7 +151,6 @@ def main() -> None:
     client = backend.auth()
     items_repo = items.ItemRepo(client)
     items_repo.create_table()
-    # sys.exit(0)
     with sync_playwright() as p:
         context = get_browser_context(p)
         facebook = FacebookPage(
@@ -157,13 +158,8 @@ def main() -> None:
             credentials=LoginCredentials(username=email, password=password),
         )
         facebook.login(timeout_ms=15000)
-        # TODO
-        # 1. pull the data for the remaining articles links left on the db
-        #    before pulling new ones
-        # pull_articles(page, context)
-        pull_articles(items_repo, facebook)
-        # 2. pull for new articles links
-        exit_success = get_items_from_searches(facebook, queries)
+        # pull_articles(items_repo, facebook)
+        exit_success = get_items_from_searches(items_repo, facebook, queries)
         if exit_success:
             logger.info("main completed successfully")
         else:

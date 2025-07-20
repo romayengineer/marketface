@@ -132,22 +132,6 @@ def collect_articles_links(page: Page, xpath: str = "//a") -> Iterator[Locator]:
         yield coll
 
 
-def create_item(href_full: str, file_name: Optional[str] = None) -> Optional[BaseModel]:
-    try:
-        model = database.create_item(href_full, file_name)
-        logger.info("record doesn't exist... created: %s", href_full)
-        return model
-    except ClientResponseError as err:
-        if err.status == 400:
-            data: Dict = err.data.get('data', {})
-            key_url: Dict = data.get("url", {})
-            code = key_url.get("code", "")
-            if isinstance(code, str) and code == "validation_not_unique":
-                logger.info("item already exists")
-                return
-        logger.error("unexpected error status code 400 data %s", data)
-
-
 def download_image(href_short: str, img_src: str) -> str:
     """
     Downloads an image from img_src and saves it to a file
