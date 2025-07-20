@@ -189,7 +189,7 @@ class MarketplacePage(WebPage):
             try:
                 return page.locator(xpath).text_content()
             except TimeoutError:
-                self.logger.info("selector for title failed nth %s", i)
+                self.logger.debug("selector for title failed nth %s", i)
         self.logger.error("selector for title failed all")
 
     def get_price(self, page: Page) -> Optional[str]:
@@ -198,7 +198,7 @@ class MarketplacePage(WebPage):
             try:
                 return page.locator(xpath).text_content()
             except TimeoutError:
-                self.logger.info("selector for price failed nth %s", i)
+                self.logger.debug("selector for price failed nth %s", i)
         self.logger.error("selector for price failed all")
 
     def get_description(self, page: Page) -> Optional[str]:
@@ -213,7 +213,7 @@ class MarketplacePage(WebPage):
                     continue
                 return description
             except TimeoutError:
-                self.logger.info("selector for description failed nth %s", i)
+                self.logger.debug("selector for description failed nth %s", i)
         self.logger.error("selector for description failed all")
 
 
