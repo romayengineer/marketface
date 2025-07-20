@@ -2,6 +2,7 @@ from typing import Optional, Iterator, Dict
 
 from pocketbase import PocketBase
 from pocketbase.services.record_service import RecordService
+from pocketbase.services.collection_service import CollectionService
 from pydantic import BaseModel, Field
 
 
@@ -72,7 +73,8 @@ class BaseRepo:
 class ItemRepo(BaseRepo):
 
     def __init__(self, client: PocketBase) -> None:
-        self.setup(client, "items")
+        self.collection_name = "items"
+        self.setup(client, self.collection_name)
 
     def get_by_url(self, url: str) -> Optional[Item]:
         return self.first(f'url = "{url}"')
@@ -83,3 +85,26 @@ class ItemRepo(BaseRepo):
     def set_deleted(self, item: Item) -> Optional[Item]:
         item.deleted = True
         return self.update(item)
+
+    def create_table(self) -> None:
+
+        collection_schema = []
+
+        # TODO iterate over each field in Item model
+        for field in Item:
+            collection_schema.append({
+                "name": field.name,
+                "type": field.type,
+                "required": field.required,
+                "unique": False,
+                "options": {}
+            })
+
+        collection_data = {
+            "name": self.collection_name,
+            "type": "base",
+            "schema": collection_schema,
+        }
+
+        collections: CollectionService = self.client.collections
+        collections.create(collection_data)
