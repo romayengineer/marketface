@@ -32,16 +32,16 @@ def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
             )
             valid = True
             if not db_item.title:
-                logger.error("item details error on data: '%s' '%s' '%s' '%s'", db_item.id, db_item.url, item.title, item.price)
                 valid = False
-            db_item.log()
             if valid:
                 db_item.deleted = False
+                db_item.log()
                 items_repo.update(db_item)
                 # database.update_item_by_id(db_item.id, item.to_dict())
                 logger.info("item details updated: '%s' '%s'", db_item.id, db_item.url)
             else:
                 db_item.deleted = True
+                db_item.log()
                 items_repo.set_deleted(db_item)
                 # database.update_item_deleted_id(db_item.id)
                 logger.warning("item details deleting: '%s' '%s'", db_item.id, db_item.url)

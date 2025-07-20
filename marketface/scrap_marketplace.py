@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import os
-import re
 import sys
 import time
 from argparse import ArgumentTypeError
@@ -16,7 +15,6 @@ sys.path.insert(0, os.getcwd())
 # dynamically and I update the code to see the changing without
 # reloading the script or browser
 from marketface import play_dynamic
-from marketface.play_dynamic import open_new_page
 from marketface.utils import shorten_item_url
 from marketface.creds import read_creds
 from marketface.logger import getLogger
@@ -150,18 +148,3 @@ def collect_articles_all(page: Page) -> None:
             print(err)
         # time.sleep(3)
     print("all ", counter)
-
-
-def main() -> None:
-    with sync_playwright() as p:
-        context = get_browser_context(p)
-        try:
-            page = open_new_page(context)
-            play_repl(context, page)
-        finally:
-            print("saving browser context")
-            context.storage_state(path=storage_state_file)
-
-
-if __name__ == "__main__":
-    main()
