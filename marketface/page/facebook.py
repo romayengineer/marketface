@@ -184,7 +184,7 @@ class MarketplacePage(WebPage):
         self.logger = getLogger("marketface.pages.facebook.MarketplacePage")
 
     def get_title(self, page: Page) -> Optional[str]:
-        self.logger.info("getting title")
+        self.logger.debug("getting title")
         for i, xpath in enumerate(xtitles):
             try:
                 return page.locator(xpath).text_content()
@@ -193,7 +193,7 @@ class MarketplacePage(WebPage):
         self.logger.error("selector for title failed all")
 
     def get_price(self, page: Page) -> Optional[str]:
-        self.logger.info("getting price")
+        self.logger.debug("getting price")
         for i, xpath in enumerate(xprices):
             try:
                 return page.locator(xpath).text_content()
@@ -202,7 +202,7 @@ class MarketplacePage(WebPage):
         self.logger.error("selector for price failed all")
 
     def get_description(self, page: Page) -> Optional[str]:
-        self.logger.info("getting description")
+        self.logger.debug("getting description")
         for i, xpath in enumerate(xdescs):
             try:
                 description = page.locator(xpath).text_content()
