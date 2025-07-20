@@ -6,8 +6,7 @@ import time
 from argparse import ArgumentTypeError
 from importlib import reload
 
-from playwright.sync_api import sync_playwright
-from playwright.sync_api import Browser, BrowserContext, Page, Playwright, Route, Locator
+from playwright.sync_api import Browser, BrowserContext, Playwright
 
 sys.path.insert(0, os.getcwd())
 

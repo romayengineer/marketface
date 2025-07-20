@@ -68,42 +68,33 @@ def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, 
             links_processed_in_search = set()
             links_counter_old = -1
             links_counter_new = 0
-            max_tries = 10
+            max_tries = 6
             while True:
                 if links_counter_old < links_counter_new:
                     tries = 1
                 else:
                     tries += 1
+                    logger.info(
+                        "scroll down %s %s %s",
+                        tries, links_counter_old, links_counter_new,
+                    )
+                    time.sleep(5)
                 if tries >= max_tries + 1:
                     break
                 links_counter_old = links_counter_new
-                try:
+                with skip(url_not_unique):
                     for href in facebook.get_market_href():
                         if href in links_processed_in_search:
                             continue
                         links_processed_in_search.add(href)
                         links_counter_new += 1
-                        try:
-                            with skip(url_not_unique):
-                                item = items.Item.model_validate({"url": href})
-                                model = items_repo.create(item)
-                            if model:
-                                logger.info("item search created: '%s' '%s'", query, href)
-                        except Exception as err:
-                            logger.error("item search error on create '%s' '%s': %s", query, href, err)
-                except Exception as err:
-                    logger.error("item search error on get href '%s': %s", query, err)
-                # page is defined
-                logger.info("scroll down %s %s %s", tries, links_counter_old, links_counter_new)
-                cast(Page, facebook.current_page).evaluate("window.scrollTo(0, document.body.scrollHeight)")
-                time.sleep(1)
-            # 3. save all new articles links from search page
-            # collect_articles_all(page)
-            # 4. pull the data from each of the new articles links
-            # pull_articles(page, context)
+                        item = items.Item.model_validate({"url": href})
+                        items_repo.create(item)
+                cast(Page, facebook.current_page).evaluate(
+                    "window.scrollTo(0, document.body.scrollHeight)"
+                )
         except PageBlocked as err:
             logger.error(err)
-            # exit_with_error = True
             return False
         except Exception as err:
             logger.error("item search error on search '%s': %s", query, err)
