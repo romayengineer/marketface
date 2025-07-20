@@ -361,15 +361,18 @@ class FacebookPage(WebPage):
                 self.logger.warning("product is far or not available")
                 return None
         title = self.market.get_title(page)
+        if not title:
+            self.logger.error("title is required: %s", title)
+            return None
         priceStr = self.market.get_price(page)
-        description = self.market.get_description(page)
-        if not title or not priceStr:
-            self.logger.error("title and price are required: title '%s' price '%s'", title, priceStr)
+        if not priceStr:
+            self.logger.error("price is required: %s", priceStr)
             return None
         price = price_str_to_int(priceStr)
         if price is None:
             self.logger.error("invalid price '%s'", priceStr)
             return None
+        description = self.market.get_description(page)
         item.title = title
         item.priceStr = priceStr
         item.description = description or ""
