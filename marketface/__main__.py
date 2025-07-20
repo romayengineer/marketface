@@ -147,7 +147,7 @@ def main() -> None:
             credentials=LoginCredentials(username=email, password=password),
         )
         facebook.login(timeout_ms=15000)
-        # pull_articles(items_repo, facebook)
+        pull_articles(items_repo, facebook)
         exit_success = get_items_from_searches(items_repo, facebook, queries)
         if exit_success:
             logger.info("main completed successfully")
