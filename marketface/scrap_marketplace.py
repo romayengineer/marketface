@@ -6,7 +6,7 @@ import time
 from argparse import ArgumentTypeError
 from importlib import reload
 
-from playwright.sync_api import Browser, BrowserContext, Playwright
+from playwright.sync_api import Browser, BrowserContext, Playwright, ViewportSize
 
 sys.path.insert(0, os.getcwd())
 
@@ -68,7 +68,16 @@ def interactive_save_browser_context(context: BrowserContext) -> None:
 def get_browser_context(p: Playwright, with_rules: bool = True) -> BrowserContext:
     browser: Browser = p.chromium.launch(headless=headless, slow_mo=200)
     print("New Browser")
-    context: BrowserContext = browser.new_context(storage_state=storage_state_file)
+    viewport = ViewportSize(width=1920, height=1080)
+    context: BrowserContext = browser.new_context(
+        viewport=viewport,
+        screen=viewport,
+        # device_scale_factor=0.7, # TODO
+        storage_state=storage_state_file,
+    )
+    # TODO
+    # zoom_level = 0.5
+    # context.add_init_script(f"document.documentElement.style.zoom = '{zoom_level}'")
     if with_rules:
         router = FacebookRouter(context)
         router.apply_rules()
