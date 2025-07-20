@@ -8,7 +8,7 @@ from typing import List, cast
 from playwright.sync_api import sync_playwright, Page
 
 from marketface.data import backend, items
-from marketface.data.errors import skip, url_not_unique, description_max_text, all_exceptions
+from marketface.data.errors import skip, url_not_unique, description_max_text, all_exceptions, playwright_timeout
 from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
 from marketface.page.facebook import FacebookPage, LoginCredentials, PageBlocked
@@ -20,7 +20,11 @@ logger = getLogger("marketface.__main__")
 
 def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
     for db_item in items_repo.get_incomplete():
-        with skip(description_max_text, all_exceptions("get item incomplete")):
+        with skip(
+            description_max_text,
+            playwright_timeout,
+            all_exceptions("get item incomplete")
+        ):
             if db_item.url is None:
                 continue
             facebook.market_item(

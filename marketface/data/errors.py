@@ -1,8 +1,11 @@
+from typing import Callable
 from contextlib import contextmanager
 
 from pocketbase.utils import ClientResponseError
+from playwright.sync_api import TimeoutError
 
 from marketface.logger import getLogger
+
 
 
 logger = getLogger("marketface.data.errors")
@@ -11,7 +14,7 @@ logger = getLogger("marketface.data.errors")
 @contextmanager
 def skip(*error_catchers):
     """
-    skip errors like item with url already exists.
+    skip common errors that are handled always the same way
     """
     try:
         yield
@@ -46,7 +49,14 @@ def description_max_text(err: ClientResponseError) -> bool:
             return True
     return False
 
-def all_exceptions(message: str):
-    def catcher(err: Exception):
+def playwright_timeout(err: TimeoutError) -> bool:
+    if not isinstance(err, TimeoutError):
+        return False
+    logger.error("playwright timeout")
+    return True
+
+def all_exceptions(message: str) -> Callable:
+    def catcher(err: Exception) -> bool:
         logger.error("exception in %s: %s", message, err)
+        return True
     return catcher
