@@ -8,13 +8,11 @@ from typing import List, cast
 from playwright.sync_api import sync_playwright, Page
 
 from marketface.data import backend, items
-from marketface.data.errors import skip, url_not_unique
+from marketface.data.errors import skip, url_not_unique, description_max_text, all_exceptions
 from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
 from marketface.page.facebook import FacebookPage, LoginCredentials, PageBlocked
 from marketface.logger import getLogger
-
-from pocketbase.utils import ClientResponseError
 
 
 logger = getLogger("marketface.__main__")
@@ -22,7 +20,7 @@ logger = getLogger("marketface.__main__")
 
 def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
     for db_item in items_repo.get_incomplete():
-        try:
+        with skip(description_max_text, all_exceptions("get item incomplete")):
             if db_item.url is None:
                 continue
             facebook.market_item(
@@ -30,30 +28,9 @@ def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
             ).market_details(
                 item=db_item,
             )
-            valid = True
-            if not db_item.title:
-                valid = False
-            if valid:
-                db_item.deleted = False
-                db_item.log()
-                items_repo.update(db_item)
-                logger.info("item details updated: '%s' '%s'", db_item.id, db_item.url)
-            else:
-                db_item.deleted = True
-                db_item.log()
-                items_repo.set_deleted(db_item)
-                logger.warning("item details deleting: '%s' '%s'", db_item.id, db_item.url)
-        except ClientResponseError as err:
-            if err.status == 400:
-                code = err.data.get("data", {}).get("description", {}).get("code")
-                error_code = "validation_max_text_constraint"
-                if code == error_code:
-                    logger.warning(error_code)
-                    continue
-            logger.error("item details error on details: %s", err)
-        except Exception as err:
-            # import pdb; pdb.set_trace()
-            logger.error("item details error on details: %s", err)
+            db_item.deleted = not db_item.title
+            db_item.log()
+            items_repo.update(db_item)
 
 
 def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, queries: List[str]) -> bool:

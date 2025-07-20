@@ -32,3 +32,21 @@ def url_not_unique(err: ClientResponseError) -> bool:
             logger.debug("item already exists")
             return True
     return False
+
+def description_max_text(err: ClientResponseError) -> bool:
+    if not isinstance(err, ClientResponseError):
+        return False
+    if err.status == 400:
+        code: str = err.data.get("data", {}).get("description", {}).get("code", "")
+        if not isinstance(code, str):
+            return False
+        error_code = "validation_max_text_constraint"
+        if code == error_code:
+            logger.warning("%s: description", error_code)
+            return True
+    return False
+
+def all_exceptions(message: str):
+    def catcher(err: Exception):
+        logger.error("exception in %s: %s", message, err)
+    return catcher
