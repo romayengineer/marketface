@@ -18,21 +18,21 @@ xbody = "xpath=/html/body"
 ximg = "xpath=//img"
 
 # common xpath that is used in all other xpaths
-xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]"
+xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]"
 # TODO implement a way to handle all possible xpaths
 # for example copy the html of the xbase and parse later in another jov / function
 xtitles = [
-    f"xpath={xbase}/div[1]/div[1]/h1",
-    f"xpath={xbase}/div[1]/h1",
+    f"xpath={xbase}/div/div[1]/div[1]/div[1]/div[1]/h1",
+    f"xpath={xbase}/div/div[1]/div[1]/div[1]/h1",
 ]
 xprices = [
-    f"xpath={xbase}/div[1]/div[1]/div[1]",
-    f"xpath={xbase}/div[1]/div[2]",
+    f"xpath={xbase}/div/div[1]/div[1]/div[1]/div[1]/div[1]",
+    f"xpath={xbase}/div/div[1]/div[1]/div[1]/div[2]",
 ]
 xdescs = [
-    f"xpath={xbase}/div[1]/div[5]/div/div[2]/div[1]",
-    f"xpath={xbase}/div[5]",
-    f"xpath={xbase}/div[5]/div[2]/div/div[1]",
+    f"xpath={xbase}/div/div[1]/div[1]/div[1]/div[5]/div/div[2]/div[1]",
+    f"xpath={xbase}/div/div[1]/div[1]/div[5]",
+    f"xpath={xbase}/div/div[1]/div[1]/div[5]/div[2]/div/div[1]",
 ]
 # To check if the session / account is blocked
 xblocked = "xpath=/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div"
