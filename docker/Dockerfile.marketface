@@ -81,6 +81,7 @@ RUN mkdir -p ./data/base \
     && pocketbase migrate \
     && pocketbase admin create romayengineer@gmail.com adminadmin\!
 
+RUN pip install pydantic
 # TODO enable manually for now with cron -f
 # because the pocketbase database needs to be run before running the script
 # CMD ["cron", "-f"]

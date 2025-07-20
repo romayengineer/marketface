@@ -32,7 +32,7 @@ class Router(ABC):
 class RateLimiter(ABC):
 
     @abstractmethod
-    def acquire(self) -> None:
+    def acquire(self, tokens_needed: int) -> None:
         ...
 
 
@@ -74,8 +74,8 @@ class TokenBucketRateLimiter(RateLimiter):
                     self.tokens -= tokens_needed
                     # Exit the loop and let the worker proceed
                     sleeped_for = time.perf_counter() - self.acquire_return_time
-                    if sleeped_for > 0.5:
-                        logger.info("time elapsed since acquire returned %s", sleeped_for)
+                    if sleeped_for > 1:
+                        logger.debug("time elapsed since acquire returned %s", sleeped_for)
                     self.acquire_return_time = time.perf_counter()
                     return
 

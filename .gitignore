@@ -2,11 +2,11 @@ __pycache__
 .DS_Store
 .ipynb_checkpoints
 *.ipynb
-best_xgboost_model.json
-data
 pb_data
-Pipfile.lock
-venv
+/best_xgboost_model.json
+/data
+/Pipfile.lock
+/venv
+/browser_context.json
+/draft.md
 creds.json
-browser_context.json
-draft.md

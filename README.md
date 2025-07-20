@@ -22,6 +22,16 @@ pocketbase (binary) 0.27.2
 - pipenv shell
 - playwright install chromium
 
+## Differences between pocketbase python sdk 0.12.3 to 0.15.0
+
+This class is in another module
+```
+# 0.15.0
+# from pocketbase.errors import ClientResponseError
+# 0.12.3
+from pocketbase.utils import ClientResponseError
+```
+
 ## Build with Docker
 
 ```
