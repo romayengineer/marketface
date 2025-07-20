@@ -44,7 +44,6 @@ class BaseRepo:
         return self._validate(record)
 
     def list(self, start: int, count: int, params: Optional[Dict] = None) -> Iterator[Optional[Item]]:
-        params = params or {}
         records = self.collection.get_list(start, count, params).items
         for record in records:
             yield self._validate(record)
@@ -72,7 +71,7 @@ class BaseRepo:
 
 class ItemRepo(BaseRepo):
 
-    def __init__(self, client: PocketBase):
+    def __init__(self, client: PocketBase) -> None:
         self.setup(client, "items")
 
     def by_url(self, url: str) -> Optional[Item]:
