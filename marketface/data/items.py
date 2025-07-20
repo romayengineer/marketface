@@ -1,9 +1,17 @@
-from typing import Optional, Iterator, Dict
+from typing import Optional, Iterator, Dict, Union, get_origin, get_args
 
+from pydantic import BaseModel
+from pydantic.fields import Field, FieldInfo
 from pocketbase import PocketBase
 from pocketbase.services.record_service import RecordService
 from pocketbase.services.collection_service import CollectionService
-from pydantic import BaseModel, Field
+from pocketbase.models.collection import Collection
+from pocketbase.errors import ClientResponseError
+
+from marketface.logger import getLogger
+
+
+logger = getLogger("marketface.data.items")
 
 
 class PocketBaseModel(BaseModel):
@@ -31,9 +39,17 @@ class Item(PocketBaseModel):
 
 class BaseRepo:
 
+    type_map = {
+        str: "text",
+        float: "number",
+        int: "number",
+        bool: "bool",
+    }
+
     def setup(self, client: PocketBase, collection_name: str) -> None:
         self.client: PocketBase = client
-        self.collection: RecordService = self.client.collection(collection_name)
+        self.collection_name: str = collection_name
+        self.collection: RecordService = self.client.collection(self.collection_name)
 
     def _validate(self, data) -> Optional[Item]:
         if not data:
@@ -69,12 +85,36 @@ class BaseRepo:
             return None
         self.collection.create(item.model_dump())
 
+    def table_exists(self) -> Optional[Collection]:
+        try:
+            return self.client.collections.get_one(self.collection_name)
+        except ClientResponseError as e:
+            if e.status != 404:
+                raise e
+
+    def get_pb_type(self, field_name: str, field_info: FieldInfo) -> str:
+
+        if field_name == 'url':
+            pb_type = 'url'
+        else:
+            annotation = field_info.annotation
+            origin = get_origin(annotation)
+
+            if origin is Union:
+                inner_type = next((t for t in get_args(annotation) if t is not type(None)), None)
+            else:
+                inner_type = annotation
+
+            pb_type = BaseRepo.type_map.get(inner_type, "json")
+
+        return pb_type
+
+
 
 class ItemRepo(BaseRepo):
 
     def __init__(self, client: PocketBase) -> None:
-        self.collection_name = "items"
-        self.setup(client, self.collection_name)
+        self.setup(client, "items")
 
     def get_by_url(self, url: str) -> Optional[Item]:
         return self.first(f'url = "{url}"')
@@ -86,18 +126,37 @@ class ItemRepo(BaseRepo):
         item.deleted = True
         return self.update(item)
 
-    def create_table(self) -> None:
+    def create_table(self) -> Optional[Collection]:
+
+        if self.table_exists():
+            logger.info(
+                "Collection '%s' already exists. Skipping creation.",
+                self.collection_name,
+            )
+            return
+        else:
+            logger.info(
+                "Collection '%s' not found. Attempting to create...",
+                self.collection_name,
+            )
 
         collection_schema = []
 
         # TODO iterate over each field in Item model
-        for field in Item:
+        for field_name, field_info in Item.model_fields.items():
+            # Exclude fields from the base model (id, created, updated) as
+            # PocketBase manages them automatically.
+            if field_name in PocketBaseModel.model_fields:
+                continue
+
+            pb_type = self.get_pb_type(field_name, field_info)
+
             collection_schema.append({
-                "name": field.name,
-                "type": field.type,
-                "required": field.required,
-                "unique": False,
-                "options": {}
+                "name": field_info.alias or field_name,
+                "type": pb_type,
+                "required": field_info.is_required(),
+                "unique": False, # TODO
+                "options": {} # TODO
             })
 
         collection_data = {
@@ -107,4 +166,4 @@ class ItemRepo(BaseRepo):
         }
 
         collections: CollectionService = self.client.collections
-        collections.create(collection_data)
+        return collections.create(collection_data)
