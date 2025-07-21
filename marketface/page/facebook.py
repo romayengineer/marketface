@@ -2,8 +2,9 @@ import sys
 sys.path.insert(0, "/home/marketface")
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Iterator
+from typing import Optional, Dict, Iterator, Set
 from urllib.parse import urlencode
+from bs4 import BeautifulSoup
 
 
 from marketface.data.items import Item
@@ -18,25 +19,27 @@ xbody = "xpath=/html/body"
 ximg = "xpath=//img"
 
 # common xpath that is used in all other xpaths
-xbase = "/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]"
+xbase = "xpath=/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]"
 # TODO implement a way to handle all possible xpaths
 # for example copy the html of the xbase and parse later in another jov / function
 xtitles = [
-    f"xpath={xbase}/div/div[1]/div[1]/div[1]/div[1]/h1",
-    f"xpath={xbase}/div/div[1]/div[1]/div[1]/h1",
+    f"{xbase}/div/div[1]/div[1]/div[1]/div[1]/h1",
+    f"{xbase}/div/div[1]/div[1]/div[1]/h1",
 ]
 xprices = [
-    f"xpath={xbase}/div/div[1]/div[1]/div[1]/div[1]/div[1]",
-    f"xpath={xbase}/div/div[1]/div[1]/div[1]/div[2]",
+    f"{xbase}/div/div[1]/div[1]/div[1]/div[1]/div[1]",
+    f"{xbase}/div/div[1]/div[1]/div[1]/div[2]",
 ]
 xdescs = [
-    f"xpath={xbase}/div/div[1]/div[1]/div[1]/div[5]/div/div[2]/div[1]",
-    f"xpath={xbase}/div/div[1]/div[1]/div[5]",
-    f"xpath={xbase}/div/div[1]/div[1]/div[5]/div[2]/div/div[1]",
+    f"{xbase}/div/div[1]/div[1]/div[1]/div[5]/div/div[2]/div[1]",
+    f"{xbase}/div/div[1]/div[1]/div[5]",
+    f"{xbase}/div/div[1]/div[1]/div[5]/div[2]/div/div[1]",
 ]
 # To check if the session / account is blocked
 xblocked = "xpath=/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div/div"
 
+# This does not contain the message box
+xdetails = "xpath=/html/body/div[1]/div/div[1]/div/div[3]/div/div/div[1]/div[1]/div[2]/div/div/div/div/div/div[1]/div[2]/div/div[2]/div/div[1]/div[1]"
 
 @dataclass
 class LoginCredentials:
@@ -50,6 +53,15 @@ class PageInvalid(Exception):
 
 class PageBlocked(PageInvalid):
     pass
+
+
+def clean_html_attributes(html_content: str, unwanted_attrs: Set[str]) -> str:
+    soup = BeautifulSoup(html_content, 'html.parser')
+    for tag in soup.find_all(True):
+        for attr in list(tag.attrs.keys()):
+            if attr in unwanted_attrs:
+                del tag[attr]
+    return str(soup)
 
 
 def drop_leading_nondigits(priceStr: str) -> str:
@@ -182,6 +194,19 @@ class MarketplacePage(WebPage):
         ):
         super().__init__(context=context, timeout_ms=timeout_ms)
         self.logger = getLogger("marketface.pages.facebook.MarketplacePage")
+
+    def get_html(self, page: Page) -> Optional[str]:
+        self.logger.debug("getting html")
+        try:
+            html = page.locator(xdetails).inner_html()
+            return clean_html_attributes(
+                html,
+                {
+                    "class", "aria-hidden", "aria-invalid", "aria-pressed", "aria-expanded"
+                }
+            )
+        except TimeoutError:
+            self.logger.debug("selector for xbase failed all")
 
     def get_title(self, page: Page) -> Optional[str]:
         self.logger.debug("getting title")
@@ -348,7 +373,7 @@ class FacebookPage(WebPage):
         page.goto(item_url)
         return self
 
-    def market_details(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Optional[Item]:
+    def market_details_all(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Optional[Item]:
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
@@ -387,6 +412,28 @@ class FacebookPage(WebPage):
             item.priceUsd = round(price / item.usdArsRate, 2)
             item.priceArs = price
             item.usd = False
+        return item
+
+    def market_details(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Optional[Item]:
+        page = page or self.current_page
+        if not page:
+            raise ValueError("page is required")
+        item = item or Item.model_validate({})
+        body = str(page.locator(xbody).text_content())
+        invalid_strs = [
+            "Esta publicación ya no",
+            "This listing is far",
+            "This Listing Isn't",
+        ]
+        for invalid_str in invalid_strs:
+            if invalid_str in body:
+                self.logger.warning("product is far or not available")
+                return None
+        html = self.market.get_html(page)
+        if not html:
+            self.logger.error("html is required: %s", html)
+            return None
+        item.html = html
         return item
 
 

@@ -28,6 +28,7 @@ class PocketBaseModel(BaseModel):
 
 class Item(PocketBaseModel):
     url: Optional[str] = Field(None)
+    html: Optional[str] = Field(None)
     title: Optional[str] = Field(None)
     description: Optional[str] = Field(None)
     priceStr: Optional[str] = Field(None)
