@@ -2,13 +2,13 @@ import sys
 sys.path.insert(0, "/home/marketface")
 
 from dataclasses import dataclass
-from typing import Optional, Dict, Iterator, Set
+from typing import Optional, Dict, Iterator
 from urllib.parse import urlencode
-from bs4 import BeautifulSoup
 
 
 from marketface.data.items import Item
 from marketface.logger import getLogger
+from marketface.page.cleanse import clean_html_attributes
 
 from playwright.sync_api import TimeoutError, BrowserContext, Page, Locator
 
@@ -53,15 +53,6 @@ class PageInvalid(Exception):
 
 class PageBlocked(PageInvalid):
     pass
-
-
-def clean_html_attributes(html_content: str, unwanted_attrs: Set[str]) -> str:
-    soup = BeautifulSoup(html_content, 'html.parser')
-    for tag in soup.find_all(True):
-        for attr in list(tag.attrs.keys()):
-            if attr in unwanted_attrs:
-                del tag[attr]
-    return str(soup)
 
 
 def drop_leading_nondigits(priceStr: str) -> str:
