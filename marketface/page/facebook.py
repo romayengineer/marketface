@@ -416,18 +416,19 @@ class FacebookPage(WebPage):
             item.usd = False
         return item
 
-    def market_details(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Optional[Item]:
+    def market_details(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Item:
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
         item = item or Item.model_validate({})
         if not self.market.is_item_available(page):
-            return None
-        html = self.get_html(page)
-        if not html:
-            self.logger.error("html is required: %s", html)
-            return None
-        item.html = html
+            return item
+        item.html = self.get_html(page)
+        if not item.html:
+            self.logger.error("html is required: %s", item.html)
+            item.deleted = True
+            return item
+        item.deleted = False
         return item
 
 

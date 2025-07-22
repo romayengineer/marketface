@@ -32,7 +32,6 @@ def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
             ).market_details(
                 item=db_item,
             )
-            db_item.deleted = not (db_item.title or db_item.html)
             db_item.log()
             items_repo.update(db_item)
 
