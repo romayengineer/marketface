@@ -87,19 +87,6 @@ def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, 
 def main() -> None:
     exit_success = True
     queries: List[str] = [
-        # build search url for apple with models, retina, pro, air
-        "apple retina",
-        "apple pro",
-        "apple air",
-        # build search url for apple with processors, i7, m1, m2, m3, m4
-        "apple i7",
-        "apple m1",
-        "apple m2",
-        "apple m3",
-        "apple m4",
-        # build search url for apple with memory ram, 16 gb, 32 gb
-        "apple 16 gb",
-        "apple 32 gb",
         # build search url for macbooks with models, retina, pro, air
         "macbook retina",
         "macbook pro",
