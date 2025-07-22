@@ -175,17 +175,6 @@ class WebPage:
         if self.is_blocked(page):
             raise PageBlocked("the session / account is blocked")
 
-
-class MarketplacePage(WebPage):
-
-    def __init__(
-            self,
-            context: BrowserContext,
-            timeout_ms: Optional[int] = None
-        ):
-        super().__init__(context=context, timeout_ms=timeout_ms)
-        self.logger = getLogger("marketface.pages.facebook.MarketplacePage")
-
     def get_html(self, page: Page) -> Optional[str]:
         self.logger.debug("getting html")
         try:
@@ -198,6 +187,17 @@ class MarketplacePage(WebPage):
             )
         except TimeoutError:
             self.logger.debug("selector for xbase failed all")
+
+
+class MarketplacePage(WebPage):
+
+    def __init__(
+            self,
+            context: BrowserContext,
+            timeout_ms: Optional[int] = None
+        ):
+        super().__init__(context=context, timeout_ms=timeout_ms)
+        self.logger = getLogger("marketface.pages.facebook.MarketplacePage")
 
     def get_title(self, page: Page) -> Optional[str]:
         self.logger.debug("getting title")
@@ -420,7 +420,7 @@ class FacebookPage(WebPage):
             if invalid_str in body:
                 self.logger.warning("product is far or not available")
                 return None
-        html = self.market.get_html(page)
+        html = self.get_html(page)
         if not html:
             self.logger.error("html is required: %s", html)
             return None
