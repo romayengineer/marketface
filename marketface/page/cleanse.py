@@ -24,7 +24,7 @@ def clean_html_attributes(html_content: str, unwanted_attrs: Set[str]) -> str:
         for attr in list(tag.attrs.keys()):
             if attr in unwanted_attrs:
                 del tag[attr]
-    return str(soup)
+    return soup.decode()
 
 def is_leaf(tag: Tag) -> bool:
     return tag.find(True, recursive=False) is None
