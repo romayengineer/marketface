@@ -5,6 +5,19 @@ from bs4._typing import _OneElement
 from typing import Set, List, Iterator, Optional, cast
 
 
+text_to_skip = [
+    "Compartir",
+    "Guardar",
+    "Enviar",
+    "Enviar mensaje",
+    "Envía un mensaje al vendedor",
+    "Hola. ¿Sigue disponible?",
+    "Hola. ¿Sigue estando disponible?",
+    "Detalles del vendedor",
+    "Publicidad",
+]
+
+
 def clean_html_attributes(html_content: str, unwanted_attrs: Set[str]) -> str:
     soup = BeautifulSoup(html_content, 'html.parser')
     for tag in cast(List[Tag], soup.find_all(True)):
