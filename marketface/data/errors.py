@@ -57,6 +57,6 @@ def playwright_timeout(err: TimeoutError) -> bool:
 
 def all_exceptions(message: str) -> Callable:
     def catcher(err: Exception) -> bool:
-        logger.error("exception in %s: %s", message, err)
+        logger.error("exception in %s: %s %s", message, type(err), err)
         return True
     return catcher
