@@ -32,7 +32,8 @@ def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
             ).market_details(
                 item=db_item,
             )
-            db_item.log()
+            # when running pocketbase with --dev flag it logs the insert into query
+            # db_item.log()
             items_repo.update(db_item)
 
 
