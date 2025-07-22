@@ -64,14 +64,15 @@ def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, 
                 if tries >= max_tries + 1:
                     break
                 links_counter_old = links_counter_new
-                for href in facebook.get_market_href():
-                    if href in links_processed_in_search:
-                        continue
-                    links_processed_in_search.add(href)
-                    links_counter_new += 1
-                    item = items.Item.model_validate({"url": href})
-                    with skip(url_not_unique):
-                        items_repo.create(item)
+                with skip(playwright_timeout):
+                    for href in facebook.get_market_href():
+                        if href in links_processed_in_search:
+                            continue
+                        links_processed_in_search.add(href)
+                        links_counter_new += 1
+                        item = items.Item.model_validate({"url": href})
+                        with skip(url_not_unique):
+                            items_repo.create(item)
                 cast(Page, facebook.current_page).evaluate(
                     "window.scrollTo(0, document.body.scrollHeight)"
                 )
@@ -86,10 +87,6 @@ def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, 
 def main() -> None:
     exit_success = True
     queries: List[str] = [
-        # build search url for moto honda wave
-        "moto honda",
-        "honda wave",
-        "moto honda wave",
         # build search url for apple with models, retina, pro, air
         "apple retina",
         "apple pro",
