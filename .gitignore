@@ -8,5 +8,5 @@ pb_data
 /Pipfile.lock
 /venv
 /browser_context.json
-/draft.md
+/draft
 creds.json

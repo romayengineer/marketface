@@ -28,6 +28,7 @@ class PocketBaseModel(BaseModel):
 
 class Item(PocketBaseModel):
     url: Optional[str] = Field(None)
+    html: Optional[str] = Field(None)
     title: Optional[str] = Field(None)
     description: Optional[str] = Field(None)
     priceStr: Optional[str] = Field(None)
@@ -77,9 +78,13 @@ class BaseRepo:
 
     def all(self, params: Optional[Dict] = None) -> Iterator[Item]:
         page = 1
-        while True:
+        got_any = True
+        while got_any:
+            got_any = False
             items = self.list(page, 100, params)
-            if not items:
+            for item in items:
+                got_any = True
+                yield self._validate(item)
                 break
             for item in items:
                 yield self._validate(item)
@@ -192,7 +197,7 @@ class ItemRepo(BaseRepo):
         return self.first(f'url = "{url}"')
 
     def get_incomplete(self) -> Iterator[Item]:
-        yield from self.all({"filter": "title = '' && deleted = false"})
+        yield from self.all({"filter": "title = null && html = null && deleted = false"})
 
     def set_deleted(self, item: Item) -> Item:
         item.deleted = True
