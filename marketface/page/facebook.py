@@ -383,29 +383,29 @@ class FacebookPage(WebPage):
         page.goto(item_url)
         return self
 
-    def market_details_all(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Optional[Item]:
+    def market_details_all(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Item:
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
         item = item or Item.model_validate({})
         if not self.market.is_item_available(page):
-            return None
-        title = self.market.get_title(page)
-        if not title:
-            self.logger.error("title is required: %s", title)
-            return None
-        priceStr = self.market.get_price(page)
-        if not priceStr:
-            self.logger.error("price is required: %s", priceStr)
-            return None
-        price = price_str_to_int(priceStr)
+            return item
+        # get title
+        item.title = self.market.get_title(page)
+        if not item.title:
+            self.logger.error("title is required: %s", item.title)
+            return item
+        # get description
+        item.description = self.market.get_description(page)
+        # get price
+        item.priceStr = self.market.get_price(page)
+        if not item.priceStr:
+            self.logger.error("price is required: %s", item.priceStr)
+            return item
+        price = price_str_to_int(item.priceStr)
         if price is None:
-            self.logger.error("invalid price '%s'", priceStr)
-            return None
-        description = self.market.get_description(page)
-        item.title = title
-        item.priceStr = priceStr
-        item.description = description or ""
+            self.logger.error("invalid price '%s'", item.priceStr)
+            return item
         if price < 10000:
             item.priceUsd = price
             item.priceArs = round(price * item.usdArsRate, 2)
