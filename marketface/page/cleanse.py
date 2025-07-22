@@ -13,6 +13,8 @@ text_to_skip = [
     "Envía un mensaje al vendedor",
     "Hola. ¿Sigue disponible?",
     "Hola. ¿Sigue estando disponible?",
+    "Buenas tardes. ¿Sigue disponible?",
+    "Buenas tardes. ¿Sigue estando disponible?",
     "Detalles del vendedor",
     "Publicidad",
 ]
