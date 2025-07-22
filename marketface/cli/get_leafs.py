@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+import os
+import sys
+sys.path.insert(0, os.getcwd())
+
 from marketface.data.backend import auth
 from marketface.data.items import ItemRepo
 from marketface.logger import getLogger
