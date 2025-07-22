@@ -232,6 +232,25 @@ class MarketplacePage(WebPage):
                 self.logger.debug("selector for description failed nth %s", i)
         self.logger.error("selector for description failed all")
 
+    def is_item_available(
+            self,
+            page: Optional[Page] = None,
+        ) -> bool:
+        page = page or self.current_page
+        if not page:
+            raise ValueError("page is required")
+        body = str(page.locator(xbody).text_content())
+        invalid_strs = [
+            "Esta publicación ya no",
+            "This listing is far",
+            "This Listing Isn't",
+        ]
+        for invalid_str in invalid_strs:
+            if invalid_str in body:
+                self.logger.warning("product is far or not available")
+                return False
+        return True
+
 
 class FacebookPage(WebPage):
 
@@ -369,16 +388,8 @@ class FacebookPage(WebPage):
         if not page:
             raise ValueError("page is required")
         item = item or Item.model_validate({})
-        body = str(page.locator(xbody).text_content())
-        invalid_strs = [
-            "Esta publicación ya no",
-            "This listing is far",
-            "This Listing Isn't",
-        ]
-        for invalid_str in invalid_strs:
-            if invalid_str in body:
-                self.logger.warning("product is far or not available")
-                return None
+        if not self.market.is_item_available(page):
+            return None
         title = self.market.get_title(page)
         if not title:
             self.logger.error("title is required: %s", title)
@@ -410,16 +421,8 @@ class FacebookPage(WebPage):
         if not page:
             raise ValueError("page is required")
         item = item or Item.model_validate({})
-        body = str(page.locator(xbody).text_content())
-        invalid_strs = [
-            "Esta publicación ya no",
-            "This listing is far",
-            "This Listing Isn't",
-        ]
-        for invalid_str in invalid_strs:
-            if invalid_str in body:
-                self.logger.warning("product is far or not available")
-                return None
+        if not self.market.is_item_available(page):
+            return None
         html = self.get_html(page)
         if not html:
             self.logger.error("html is required: %s", html)
