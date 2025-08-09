@@ -1,13 +1,13 @@
-.bash_history
 __pycache__
+.bash_history
 .DS_Store
 .ipynb_checkpoints
 *.ipynb
-pb_data
 /best_xgboost_model.json
+/browser_context.json
 /data
+/draft
 /Pipfile.lock
 /venv
-/browser_context.json
-/draft
 creds.json
+pb_data
