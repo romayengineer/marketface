@@ -20,11 +20,11 @@ def main() -> None:
     items_repo = ItemRepo(client)
 
     count = 1
-    max_count = 10
+    max_count = 30
     while True:
         for item in items_repo.all({"filter": "html != ''"}):
             # to get random samples
-            if randint(0, 100) != 0:
+            if randint(0, 10) != 0:
                 continue
             print("URL: ", item.url)
             html = str(item.html)

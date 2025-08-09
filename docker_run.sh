@@ -25,6 +25,7 @@ docker run -it \
     -v ./cron.sh:/home/marketface/cron.sh:ro \
     -v ./creds.json:/home/marketface/creds.json:ro \
     -v ./browser_context.json:/home/marketface/browser_context.json:rw \
+    -v ./db_run.sh:/home/marketface/db_run.sh:ro \
     --device=/dev/dri \
     --entrypoint /bin/bash \
     marketface

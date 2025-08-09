@@ -13,6 +13,7 @@ from marketface.scrap_marketplace import email, password
 from marketface.scrap_marketplace import get_browser_context
 from marketface.page.facebook import FacebookPage, LoginCredentials, PageBlocked
 from marketface.logger import getLogger
+from time import sleep
 
 
 logger = getLogger("marketface.__main__")
@@ -35,6 +36,8 @@ def pull_articles(items_repo: items.ItemRepo, facebook: FacebookPage) -> None:
             # when running pocketbase with --dev flag it logs the insert into query
             # db_item.log()
             items_repo.update(db_item)
+            # sleep to avoid making to many requests and get blocked
+            # sleep(5)
 
 
 def get_items_from_searches(items_repo: items.ItemRepo, facebook: FacebookPage, queries: List[str]) -> bool:
@@ -116,6 +119,8 @@ def main() -> None:
         pull_articles(items_repo, facebook)
         exit_success = get_items_from_searches(items_repo, facebook, queries)
         if exit_success:
+            # pull new articles again
+            pull_articles(items_repo, facebook)
             logger.info("main completed successfully")
         else:
             logger.error("main completed with an error")

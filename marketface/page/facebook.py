@@ -389,6 +389,7 @@ class FacebookPage(WebPage):
             raise ValueError("page is required")
         item = item or Item.model_validate({})
         if not self.market.is_item_available(page):
+            item.deleted = True
             return item
         # get title
         item.title = self.market.get_title(page)
@@ -422,6 +423,7 @@ class FacebookPage(WebPage):
             raise ValueError("page is required")
         item = item or Item.model_validate({})
         if not self.market.is_item_available(page):
+            item.deleted = True
             return item
         item.html = self.get_html(page)
         if not item.html:
