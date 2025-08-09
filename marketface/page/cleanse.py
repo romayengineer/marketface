@@ -5,7 +5,7 @@ from bs4._typing import _OneElement
 from typing import Set, List, Iterator, Optional, cast
 
 
-text_to_skip = [
+text_to_skip = {
     "Compartir",
     "Guardar",
     "Enviar",
@@ -17,7 +17,7 @@ text_to_skip = [
     "Buenas tardes. ¿Sigue estando disponible?",
     "Detalles del vendedor",
     "Publicidad",
-]
+}
 
 
 def clean_html_attributes(html_content: str, unwanted_attrs: Set[str]) -> str:
