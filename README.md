@@ -40,7 +40,10 @@ docker build -t marketface -f ./docker/Dockerfile.marketface . --progress=plain
 
 ## Create table
 
-play_dynamic.database.create_table("items")
+just execute normally the items tables is going to be created if it doesn't exist already, as this is a new project there are a few manual steps to be done manually on the table.
+
+1. increase max characters to 100000 in html column
+2. set unique index in url column
 
 ## Pocketbase login
 

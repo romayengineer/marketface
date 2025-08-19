@@ -2,10 +2,10 @@ from bs4 import BeautifulSoup
 from bs4.element import Tag
 from bs4._typing import _OneElement
 
-from typing import Set, List, Iterator, Optional, cast
+from typing import Set, List, Iterator, cast
 
 
-text_to_skip = [
+text_to_skip: Set[str] = {
     "Compartir",
     "Guardar",
     "Enviar",
@@ -13,9 +13,11 @@ text_to_skip = [
     "Envía un mensaje al vendedor",
     "Hola. ¿Sigue disponible?",
     "Hola. ¿Sigue estando disponible?",
+    "Buenas tardes. ¿Sigue disponible?",
+    "Buenas tardes. ¿Sigue estando disponible?",
     "Detalles del vendedor",
     "Publicidad",
-]
+}
 
 
 def clean_html_attributes(html_content: str, unwanted_attrs: Set[str]) -> str:
@@ -45,8 +47,7 @@ def get_leaf_tags(html_content: str) -> Iterator[_OneElement]:
         yield leaf
 
 def get_parent_tags(html_content: str, up: int = 2) -> Iterator[_OneElement]:
-    soup = BeautifulSoup(html_content, 'html.parser')
-    for leaf in soup.find_all(lambda tag: is_leaf(tag) and has_text(tag)):
+    for leaf in get_leaf_tags(html_content):
         parent = get_parent(leaf, up=up)
         text = parent.get_text(separator=" | ", strip=True)
         if any(map(

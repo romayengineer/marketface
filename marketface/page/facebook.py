@@ -232,6 +232,25 @@ class MarketplacePage(WebPage):
                 self.logger.debug("selector for description failed nth %s", i)
         self.logger.error("selector for description failed all")
 
+    def is_item_available(
+            self,
+            page: Optional[Page] = None,
+        ) -> bool:
+        page = page or self.current_page
+        if not page:
+            raise ValueError("page is required")
+        body = str(page.locator(xbody).text_content())
+        invalid_strs = [
+            "Esta publicación ya no",
+            "This listing is far",
+            "This Listing Isn't",
+        ]
+        for invalid_str in invalid_strs:
+            if invalid_str in body:
+                self.logger.warning("product is far or not available")
+                return False
+        return True
+
 
 class FacebookPage(WebPage):
 
@@ -364,37 +383,30 @@ class FacebookPage(WebPage):
         page.goto(item_url)
         return self
 
-    def market_details_all(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Optional[Item]:
+    def market_details_all(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Item:
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
         item = item or Item.model_validate({})
-        body = str(page.locator(xbody).text_content())
-        invalid_strs = [
-            "Esta publicación ya no",
-            "This listing is far",
-            "This Listing Isn't",
-        ]
-        for invalid_str in invalid_strs:
-            if invalid_str in body:
-                self.logger.warning("product is far or not available")
-                return None
-        title = self.market.get_title(page)
-        if not title:
-            self.logger.error("title is required: %s", title)
-            return None
-        priceStr = self.market.get_price(page)
-        if not priceStr:
-            self.logger.error("price is required: %s", priceStr)
-            return None
-        price = price_str_to_int(priceStr)
+        if not self.market.is_item_available(page):
+            item.deleted = True
+            return item
+        # get title
+        item.title = self.market.get_title(page)
+        if not item.title:
+            self.logger.error("title is required: %s", item.title)
+            return item
+        # get description
+        item.description = self.market.get_description(page)
+        # get price
+        item.priceStr = self.market.get_price(page)
+        if not item.priceStr:
+            self.logger.error("price is required: %s", item.priceStr)
+            return item
+        price = price_str_to_int(item.priceStr)
         if price is None:
-            self.logger.error("invalid price '%s'", priceStr)
-            return None
-        description = self.market.get_description(page)
-        item.title = title
-        item.priceStr = priceStr
-        item.description = description or ""
+            self.logger.error("invalid price '%s'", item.priceStr)
+            return item
         if price < 10000:
             item.priceUsd = price
             item.priceArs = round(price * item.usdArsRate, 2)
@@ -405,26 +417,20 @@ class FacebookPage(WebPage):
             item.usd = False
         return item
 
-    def market_details(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Optional[Item]:
+    def market_details(self, page: Optional[Page] = None, item: Optional[Item] = None) -> Item:
         page = page or self.current_page
         if not page:
             raise ValueError("page is required")
         item = item or Item.model_validate({})
-        body = str(page.locator(xbody).text_content())
-        invalid_strs = [
-            "Esta publicación ya no",
-            "This listing is far",
-            "This Listing Isn't",
-        ]
-        for invalid_str in invalid_strs:
-            if invalid_str in body:
-                self.logger.warning("product is far or not available")
-                return None
-        html = self.get_html(page)
-        if not html:
-            self.logger.error("html is required: %s", html)
-            return None
-        item.html = html
+        if not self.market.is_item_available(page):
+            item.deleted = True
+            return item
+        item.html = self.get_html(page)
+        if not item.html:
+            self.logger.error("html is required: %s", item.html)
+            item.deleted = True
+            return item
+        item.deleted = False
         return item
 
 
