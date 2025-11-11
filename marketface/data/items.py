@@ -164,7 +164,7 @@ class BaseRepo:
             options = {}
             if pb_type == 'text':
                 # Example: Set a max length for text fields
-                options['max'] = 3000
+                options['max'] = 20000
 
             collection_schema.append({
                 "name": field_info.alias or field_name,
